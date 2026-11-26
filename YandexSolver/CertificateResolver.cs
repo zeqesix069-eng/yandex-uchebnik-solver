@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace YandexSolver
@@ -41,19 +39,6 @@ namespace YandexSolver
             "https://xn--h1adlhdnlo2c.xn--p1ai",
             "https://datalesson.ru"
         };
-
-        private static readonly HttpClient HttpClient = CreateHttpClient();
-
-        private static HttpClient CreateHttpClient()
-        {
-            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12 | (SecurityProtocolType)3072;
-            var client = new HttpClient
-            {
-                Timeout = TimeSpan.FromSeconds(15)
-            };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
-            return client;
-        }
 
         public static LessonTarget ParseLessonUrl(string rawUrl, string slugOverride = "")
         {
@@ -125,30 +110,17 @@ namespace YandexSolver
                 string certUrl = string.Format("{0}/lessons/{1}/certificate?session_id={2}", baseUrl, target.Slug, target.SessionId);
                 try
                 {
-                    using (HttpResponseMessage response = await HttpClient.GetAsync(certUrl).ConfigureAwait(false))
+                    string body = await Task.Run(() => NativeSolverBridge.HttpGet(certUrl)).ConfigureAwait(false);
+                    if (body.Contains("certificate-page") || body.Contains("Поздравляем"))
                     {
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            lastError = string.Format("Сервер вернул HTTP {0} для {1}.", (int)response.StatusCode, certUrl);
-                            continue;
-                        }
-
-                        string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        if (body.Contains("certificate-page") || body.Contains("Поздравляем"))
-                        {
-                            return new CertificateResult(certUrl, target.Slug, target.SessionId, true);
-                        }
-
-                        lastError = string.Format("Страница {0} не похожа на страницу сертификата.", certUrl);
+                        return new CertificateResult(certUrl, target.Slug, target.SessionId, true);
                     }
+
+                    lastError = string.Format("Страница {0} не похожа на страницу сертификата.", certUrl);
                 }
-                catch (TaskCanceledException)
+                catch (InvalidOperationException exc)
                 {
-                    lastError = string.Format("Превышено время ожидания при проверке {0}.", certUrl);
-                }
-                catch (HttpRequestException exc)
-                {
-                    lastError = string.Format("Ошибка сети при проверке {0}: {1}", certUrl, exc.Message);
+                    lastError = string.Format("Ошибка при проверке {0}: {1}", certUrl, exc.Message);
                 }
             }
 
