@@ -1,0 +1,5 @@
+build/
+YandexSolver/obj/
+YandexSolver/bin/
+*.user
+*.suo
