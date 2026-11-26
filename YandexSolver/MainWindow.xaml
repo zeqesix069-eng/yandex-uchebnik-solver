@@ -41,7 +41,7 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Column="0"
-                               Text="Yandex Uchebnik Solver"
+                               Text="EduTools"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                FontFamily="Segoe UI"
                                FontSize="13.5"
@@ -51,9 +51,14 @@
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <RadioButton x:Name="WorkTabRadio"
-                                     Content="Работа"
+                                     Content="Яндекс Учебник"
                                      Style="{StaticResource NavTabStyle}"
                                      IsChecked="True"
+                                     Checked="NavTab_Changed"
+                                     Margin="0,0,4,0" />
+                        <RadioButton x:Name="DatalessonTabRadio"
+                                     Content="Урок Цифры"
+                                     Style="{StaticResource NavTabStyle}"
                                      Checked="NavTab_Changed"
                                      Margin="0,0,4,0" />
                         <RadioButton x:Name="SettingsTabRadio"
@@ -257,6 +262,116 @@
                                  Padding="8" />
                     </Grid>
                 </Border>
+            </Grid>
+
+            <Grid x:Name="DatalessonPanel" Grid.Row="1" Margin="16" Visibility="Collapsed">
+                <StackPanel>
+                    <Border Background="{DynamicResource BgSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource CardRadius}"
+                            Padding="16"
+                            Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Получение сертификата «Урок Цифры»"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,4" />
+                            <TextBlock Text="Вставьте ссылку на тренажёр или страницу урока с параметром session_id"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       FontSize="12"
+                                       Margin="0,0,0,14" />
+
+                            <TextBlock Text="Ссылка на урок"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       FontSize="11.5"
+                                       Margin="0,0,0,4" />
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="DlUrlBox"
+                                         Grid.Column="0"
+                                         Style="{StaticResource InputTextBoxStyle}"
+                                         KeyDown="DlUrlBox_KeyDown"
+                                         Margin="0,0,8,0" />
+                                <Button Grid.Column="1"
+                                        Content="Вставить"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Click="DlPaste_Click" />
+                            </Grid>
+
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="220" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="Код урока (необязательно):"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           FontSize="12"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0" />
+                                <TextBox x:Name="DlSlugBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource InputTextBoxStyle}" />
+                            </Grid>
+
+                            <Button x:Name="DlResolveButton"
+                                    Content="Получить сертификат"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    HorizontalAlignment="Left"
+                                    Padding="18,9"
+                                    Click="DlResolve_Click" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{DynamicResource BgSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource CardRadius}"
+                            Padding="16">
+                        <StackPanel>
+                            <TextBlock Text="Ссылка на сертификат"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       FontSize="11.5"
+                                       Margin="0,0,0,6" />
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="DlResultBox"
+                                         Grid.Column="0"
+                                         Style="{StaticResource InputTextBoxStyle}"
+                                         IsReadOnly="True"
+                                         Margin="0,0,8,0" />
+                                <Button x:Name="DlCopyButton"
+                                        Grid.Column="1"
+                                        Content="Копировать"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        IsEnabled="False"
+                                        Click="DlCopy_Click"
+                                        Margin="0,0,6,0" />
+                                <Button x:Name="DlOpenButton"
+                                        Grid.Column="2"
+                                        Content="Открыть"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        IsEnabled="False"
+                                        Click="DlOpen_Click" />
+                            </Grid>
+                            <TextBlock x:Name="DlStatusText"
+                                       Text="Ожидание ссылки..."
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       FontSize="12"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
 
             <ScrollViewer x:Name="SettingsPanel"

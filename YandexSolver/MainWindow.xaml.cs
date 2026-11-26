@@ -151,13 +151,13 @@ namespace YandexSolver
 
         private void NavTab_Changed(object sender, RoutedEventArgs e)
         {
-            if (WorkPanel == null || SettingsPanel == null)
+            if (WorkPanel == null || DatalessonPanel == null || SettingsPanel == null)
             {
                 return;
             }
-            bool showWork = WorkTabRadio.IsChecked == true;
-            WorkPanel.Visibility = showWork ? Visibility.Visible : Visibility.Collapsed;
-            SettingsPanel.Visibility = showWork ? Visibility.Collapsed : Visibility.Visible;
+            WorkPanel.Visibility = WorkTabRadio.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            DatalessonPanel.Visibility = DatalessonTabRadio.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            SettingsPanel.Visibility = SettingsTabRadio.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void ProviderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -578,6 +578,94 @@ namespace YandexSolver
         private void ClearLog_Click(object sender, RoutedEventArgs e)
         {
             LogBox.Clear();
+        }
+
+        private void DlUrlBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                DlResolve_Click(sender, e);
+            }
+        }
+
+        private void DlPaste_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (Clipboard.ContainsText())
+                {
+                    DlUrlBox.Text = Clipboard.GetText().Trim();
+                    DlUrlBox.CaretIndex = DlUrlBox.Text.Length;
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private async void DlResolve_Click(object sender, RoutedEventArgs e)
+        {
+            LessonTarget target;
+            try
+            {
+                target = CertificateResolver.ParseLessonUrl(DlUrlBox.Text, DlSlugBox.Text);
+            }
+            catch (ArgumentException exc)
+            {
+                DlStatusText.Text = exc.Message;
+                SetStatus(exc.Message, ErrorDot);
+                return;
+            }
+
+            DlSlugBox.Text = target.Slug;
+            DlResultBox.Text = string.Empty;
+            DlResolveButton.IsEnabled = false;
+            DlResolveButton.Content = "Проверяю...";
+            DlCopyButton.IsEnabled = false;
+            DlOpenButton.IsEnabled = false;
+            DlStatusText.Text = "Проверяю страницу сертификата на сервере...";
+            SetStatus("Проверяю сертификат Урок Цифры...", LoadingDot);
+
+            try
+            {
+                CertificateResult result = await CertificateResolver.VerifyCertificateUrlAsync(target);
+                DlResultBox.Text = result.Url;
+                DlCopyButton.IsEnabled = true;
+                DlOpenButton.IsEnabled = true;
+                string okMsg = string.Format("Готово. Урок: {0}. Можно открыть страницу и скачать сертификат.", result.Slug);
+                DlStatusText.Text = okMsg;
+                SetStatus(okMsg, SuccessDot);
+            }
+            catch (InvalidOperationException exc)
+            {
+                DlStatusText.Text = exc.Message;
+                SetStatus(exc.Message, ErrorDot);
+            }
+            finally
+            {
+                DlResolveButton.IsEnabled = true;
+                DlResolveButton.Content = "Получить сертификат";
+            }
+        }
+
+        private void DlCopy_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(DlResultBox.Text))
+            {
+                return;
+            }
+            Clipboard.SetText(DlResultBox.Text);
+            DlStatusText.Text = "Ссылка скопирована в буфер обмена.";
+            SetStatus("Ссылка скопирована в буфер обмена.", SuccessDot);
+        }
+
+        private void DlOpen_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(DlResultBox.Text))
+            {
+                return;
+            }
+            Process.Start(new ProcessStartInfo(DlResultBox.Text) { UseShellExecute = true });
         }
     }
 }
