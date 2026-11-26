@@ -23,7 +23,7 @@ namespace YandexSolver
         private AppSettings _settings;
         private CancellationTokenSource _runCts;
         private bool _isKeyVisible;
-        private bool _suppressProviderChanged;
+        private bool _suppressUiEvents;
 
         public MainWindow()
         {
@@ -38,23 +38,39 @@ namespace YandexSolver
             return b;
         }
 
+        private static void SelectComboByContent(ComboBox combo, string value)
+        {
+            foreach (ComboBoxItem item in combo.Items)
+            {
+                if (string.Equals(Convert.ToString(item.Content), value, StringComparison.OrdinalIgnoreCase))
+                {
+                    combo.SelectedItem = item;
+                    return;
+                }
+            }
+            if (combo.Items.Count > 0)
+            {
+                combo.SelectedIndex = 0;
+            }
+        }
+
+        private static string GetSelectedComboText(ComboBox combo, string fallback)
+        {
+            var selected = combo.SelectedItem as ComboBoxItem;
+            return selected != null ? Convert.ToString(selected.Content) : fallback;
+        }
+
         private void ApplySettingsToUi(AppSettings loaded)
         {
             _settings = loaded;
-            _suppressProviderChanged = true;
-            foreach (ComboBoxItem item in ProviderCombo.Items)
-            {
-                if (string.Equals(Convert.ToString(item.Content), _settings.Provider, StringComparison.OrdinalIgnoreCase))
-                {
-                    ProviderCombo.SelectedItem = item;
-                    break;
-                }
-            }
-            if (ProviderCombo.SelectedItem == null)
-            {
-                ProviderCombo.SelectedIndex = 0;
-            }
-            _suppressProviderChanged = false;
+            _suppressUiEvents = true;
+            SelectComboByContent(ProviderCombo, _settings.Provider);
+            SelectComboByContent(ThemeCombo, _settings.Theme);
+            SelectComboByContent(AccentCombo, _settings.Accent);
+            SelectComboByContent(CornerCombo, _settings.CornerStyle);
+            OpacitySlider.Value = _settings.WindowOpacity;
+            OpacityValueText.Text = Math.Round(_settings.WindowOpacity * 100) + "%";
+            _suppressUiEvents = false;
 
             BaseUrlBox.Text = _settings.BaseUrl;
             ModelBox.Text = _settings.Model;
@@ -71,12 +87,18 @@ namespace YandexSolver
             AutoAdvanceCheck.IsChecked = _settings.AutoAdvance;
             SkipTheoryCheck.IsChecked = _settings.SkipTheory;
             RetryOnWrongCheck.IsChecked = _settings.RetryOnWrong;
+
+            ThemeManager.Apply(this, _settings.Theme, _settings.Accent, _settings.CornerStyle, _settings.WindowOpacity);
         }
 
         private void ReadSettingsFromUi()
         {
-            var selected = ProviderCombo.SelectedItem as ComboBoxItem;
-            _settings.Provider = selected != null ? Convert.ToString(selected.Content) : "OpenRouter";
+            _settings.Provider = GetSelectedComboText(ProviderCombo, "OpenRouter");
+            _settings.Theme = GetSelectedComboText(ThemeCombo, "Dark (Slate)");
+            _settings.Accent = GetSelectedComboText(AccentCombo, "Синий");
+            _settings.CornerStyle = GetSelectedComboText(CornerCombo, "Стандарт");
+            _settings.WindowOpacity = Math.Round(OpacitySlider.Value, 2);
+
             _settings.BaseUrl = BaseUrlBox.Text.Trim();
             _settings.Model = ModelBox.Text.Trim();
             _settings.ApiKey = _isKeyVisible ? ApiKeyPlainBox.Text.Trim() : ApiKeyPasswordBox.Password.Trim();
@@ -140,7 +162,7 @@ namespace YandexSolver
 
         private void ProviderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_suppressProviderChanged || ProviderCombo.SelectedItem == null)
+            if (_suppressUiEvents || ProviderCombo.SelectedItem == null)
             {
                 return;
             }
@@ -154,6 +176,35 @@ namespace YandexSolver
             {
                 ModelBox.Text = defaults.Value;
             }
+        }
+
+        private void Appearance_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressUiEvents || ThemeCombo == null || AccentCombo == null || CornerCombo == null)
+            {
+                return;
+            }
+            ThemeManager.Apply(
+                this,
+                GetSelectedComboText(ThemeCombo, "Dark (Slate)"),
+                GetSelectedComboText(AccentCombo, "Синий"),
+                GetSelectedComboText(CornerCombo, "Стандарт"),
+                OpacitySlider != null ? OpacitySlider.Value : 1.0);
+        }
+
+        private void OpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_suppressUiEvents || OpacityValueText == null)
+            {
+                return;
+            }
+            OpacityValueText.Text = Math.Round(e.NewValue * 100) + "%";
+            ThemeManager.Apply(
+                this,
+                GetSelectedComboText(ThemeCombo, "Dark (Slate)"),
+                GetSelectedComboText(AccentCombo, "Синий"),
+                GetSelectedComboText(CornerCombo, "Стандарт"),
+                e.NewValue);
         }
 
         private void TempSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

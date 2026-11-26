@@ -21,6 +21,10 @@ namespace YandexSolver
         public bool AutoAdvance { get; set; }
         public bool SkipTheory { get; set; }
         public bool RetryOnWrong { get; set; }
+        public string Theme { get; set; }
+        public string Accent { get; set; }
+        public string CornerStyle { get; set; }
+        public double WindowOpacity { get; set; }
 
         public AppSettings()
         {
@@ -37,6 +41,10 @@ namespace YandexSolver
             AutoAdvance = true;
             SkipTheory = true;
             RetryOnWrong = true;
+            Theme = "Dark (Slate)";
+            Accent = "Синий";
+            CornerStyle = "Стандарт";
+            WindowOpacity = 1.0;
         }
 
         private static string GetSettingsPath()
@@ -119,6 +127,19 @@ namespace YandexSolver
                         if (bool.TryParse(val, out boolVal))
                             settings.RetryOnWrong = boolVal;
                         break;
+                    case "theme":
+                        settings.Theme = val;
+                        break;
+                    case "accent":
+                        settings.Accent = val;
+                        break;
+                    case "corner_style":
+                        settings.CornerStyle = val;
+                        break;
+                    case "window_opacity":
+                        if (double.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out dblVal))
+                            settings.WindowOpacity = Math.Max(0.75, Math.Min(1.0, dblVal));
+                        break;
                 }
             }
 
@@ -148,6 +169,10 @@ namespace YandexSolver
             sb.AppendLine("auto_advance=" + AutoAdvance);
             sb.AppendLine("skip_theory=" + SkipTheory);
             sb.AppendLine("retry_on_wrong=" + RetryOnWrong);
+            sb.AppendLine("theme=" + (Theme ?? "Dark (Slate)"));
+            sb.AppendLine("accent=" + (Accent ?? "Синий"));
+            sb.AppendLine("corner_style=" + (CornerStyle ?? "Стандарт"));
+            sb.AppendLine("window_opacity=" + WindowOpacity.ToString("0.00", CultureInfo.InvariantCulture));
             File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
         }
 

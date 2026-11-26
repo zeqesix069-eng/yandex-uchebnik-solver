@@ -3,19 +3,19 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Yandex Uchebnik Solver"
         Width="780"
-        Height="530"
+        Height="560"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen">
     <Border Margin="10"
-            Background="{StaticResource BgRootBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+            Background="{DynamicResource BgRootBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="1"
-            CornerRadius="10">
+            CornerRadius="{DynamicResource WindowRadius}">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45" Color="#000000" />
+            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.4" Color="#000000" />
         </Border.Effect>
 
         <Grid>
@@ -26,10 +26,10 @@
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0"
-                    Background="#141417"
-                    BorderBrush="{StaticResource BorderBrush}"
+                    Background="{DynamicResource BgChromeBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="0,0,0,1"
-                    CornerRadius="10,10,0,0"
+                    CornerRadius="{DynamicResource HeaderRadius}"
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid Margin="14,0,10,0">
                     <Grid.ColumnDefinitions>
@@ -42,7 +42,7 @@
 
                     <TextBlock Grid.Column="0"
                                Text="Yandex Uchebnik Solver"
-                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                FontFamily="Segoe UI"
                                FontSize="13.5"
                                FontWeight="SemiBold"
@@ -63,10 +63,10 @@
                     </StackPanel>
 
                     <Border Grid.Column="3"
-                            Background="#1E1E24"
-                            BorderBrush="{StaticResource BorderBrush}"
+                            Background="{DynamicResource BgSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="5"
+                            CornerRadius="{DynamicResource ControlRadius}"
                             Padding="8,4"
                             VerticalAlignment="Center"
                             Margin="0,0,10,0">
@@ -74,7 +74,7 @@
                             <Ellipse x:Name="ConnectionDot" Width="7" Height="7" Fill="#71717A" VerticalAlignment="Center" Margin="0,0,6,0" />
                             <TextBlock x:Name="ConnectionPillText"
                                        Text="Edge: не подключён"
-                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        FontSize="11.5"
                                        VerticalAlignment="Center" />
                         </StackPanel>
@@ -91,15 +91,15 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="125" />
+                    <RowDefinition Height="130" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0"
-                        Background="{StaticResource BgSurfaceBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
+                        Background="{DynamicResource BgSurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
-                        CornerRadius="8"
+                        CornerRadius="{DynamicResource CardRadius}"
                         Padding="12"
                         Margin="0,0,0,10">
                     <Grid>
@@ -112,12 +112,12 @@
 
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
                             <TextBlock Text="Браузер Edge (CDP)"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        FontSize="13"
                                        FontWeight="SemiBold" />
                             <TextBlock x:Name="BrowserStatusLabel"
                                        Text="Запустите Edge, войдите в учебник и подключитесь"
-                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        FontSize="12"
                                        Margin="0,2,0,0" />
                         </StackPanel>
@@ -173,24 +173,24 @@
                             Click="Stop_Click" />
 
                     <Border Grid.Column="6"
-                            Background="{StaticResource BgSurfaceBrush}"
-                            BorderBrush="{StaticResource BorderBrush}"
+                            Background="{DynamicResource BgSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="6"
+                            CornerRadius="{DynamicResource ControlRadius}"
                             Padding="10,0">
                         <TextBlock x:Name="SolvedCounterText"
                                    Text="Шагов: 0"
-                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Foreground="{DynamicResource TextMutedBrush}"
                                    FontSize="12"
                                    VerticalAlignment="Center" />
                     </Border>
                 </Grid>
 
                 <Border Grid.Row="2"
-                        Background="{StaticResource BgSurfaceBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
+                        Background="{DynamicResource BgSurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
-                        CornerRadius="8"
+                        CornerRadius="{DynamicResource CardRadius}"
                         Padding="10"
                         Margin="0,0,0,10">
                     <Grid>
@@ -200,7 +200,7 @@
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0"
                                    Text="Текущее задание"
-                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Foreground="{DynamicResource TextMutedBrush}"
                                    FontSize="11.5"
                                    FontWeight="SemiBold"
                                    Margin="0,0,0,6" />
@@ -209,9 +209,9 @@
                                  IsReadOnly="True"
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
-                                 Background="#141417"
-                                 Foreground="#D4D4D8"
-                                 BorderBrush="#2A2A32"
+                                 Background="{DynamicResource BgLogBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}"
                                  BorderThickness="1"
                                  FontSize="12"
                                  Padding="8"
@@ -220,10 +220,10 @@
                 </Border>
 
                 <Border Grid.Row="3"
-                        Background="{StaticResource BgSurfaceBrush}"
-                        BorderBrush="{StaticResource BorderBrush}"
+                        Background="{DynamicResource BgSurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
-                        CornerRadius="8"
+                        CornerRadius="{DynamicResource CardRadius}"
                         Padding="10">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -232,7 +232,7 @@
                         </Grid.RowDefinitions>
                         <Grid Grid.Row="0" Margin="0,0,0,6">
                             <TextBlock Text="Журнал"
-                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        FontSize="11.5"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center" />
@@ -248,9 +248,9 @@
                                  IsReadOnly="True"
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
-                                 Background="#111114"
-                                 Foreground="#D4D4D8"
-                                 BorderBrush="#2A2A32"
+                                 Background="{DynamicResource BgLogBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 BorderBrush="{DynamicResource BorderBrush}"
                                  BorderThickness="1"
                                  FontFamily="Consolas"
                                  FontSize="11.5"
@@ -265,15 +265,98 @@
                           VerticalScrollBarVisibility="Auto"
                           Visibility="Collapsed">
                 <StackPanel>
-                    <Border Background="{StaticResource BgSurfaceBrush}"
-                            BorderBrush="{StaticResource BorderBrush}"
+                    <Border Background="{DynamicResource BgSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="8"
+                            CornerRadius="{DynamicResource CardRadius}"
+                            Padding="14"
+                            Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Оформление"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       FontSize="13.5"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,10" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Тема" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <ComboBox x:Name="ThemeCombo"
+                                              Style="{StaticResource DarkComboBoxStyle}"
+                                              SelectionChanged="Appearance_Changed">
+                                        <ComboBoxItem Content="Dark (Slate)" />
+                                        <ComboBoxItem Content="Light" />
+                                        <ComboBoxItem Content="Midnight" />
+                                        <ComboBoxItem Content="OLED Black" />
+                                        <ComboBoxItem Content="Nord" />
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Акцент" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <ComboBox x:Name="AccentCombo"
+                                              Style="{StaticResource DarkComboBoxStyle}"
+                                              SelectionChanged="Appearance_Changed">
+                                        <ComboBoxItem Content="Синий" />
+                                        <ComboBoxItem Content="Изумрудный" />
+                                        <ComboBoxItem Content="Янтарный" />
+                                        <ComboBoxItem Content="Красный" />
+                                        <ComboBoxItem Content="Серый" />
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="Скругление" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <ComboBox x:Name="CornerCombo"
+                                              Style="{StaticResource DarkComboBoxStyle}"
+                                              SelectionChanged="Appearance_Changed">
+                                        <ComboBoxItem Content="Острые" />
+                                        <ComboBoxItem Content="Стандарт" />
+                                        <ComboBoxItem Content="Мягкие" />
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="6">
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Прозрачность" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" />
+                                        <TextBlock x:Name="OpacityValueText"
+                                                   Text="100%"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   FontSize="11.5"
+                                                   HorizontalAlignment="Right" />
+                                    </Grid>
+                                    <Slider x:Name="OpacitySlider"
+                                            Minimum="0.80"
+                                            Maximum="1.00"
+                                            TickFrequency="0.02"
+                                            IsSnapToTickEnabled="True"
+                                            Value="1.00"
+                                            Margin="0,6,0,0"
+                                            ValueChanged="OpacitySlider_ValueChanged" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{DynamicResource BgSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource CardRadius}"
                             Padding="14"
                             Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="ИИ и API"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        FontSize="13.5"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,10" />
@@ -286,7 +369,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Провайдер" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBlock Text="Провайдер" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <ComboBox x:Name="ProviderCombo"
                                               Style="{StaticResource DarkComboBoxStyle}"
                                               SelectionChanged="ProviderCombo_SelectionChanged">
@@ -301,7 +384,7 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Модель" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBlock Text="Модель" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <TextBox x:Name="ModelBox" Style="{StaticResource InputTextBoxStyle}" />
                                 </StackPanel>
                             </Grid>
@@ -314,7 +397,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="API-ключ" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBlock Text="API-ключ" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -332,7 +415,7 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Base URL" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBlock Text="Base URL" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <TextBox x:Name="BaseUrlBox" Style="{StaticResource InputTextBoxStyle}" />
                                 </StackPanel>
                             </Grid>
@@ -346,10 +429,10 @@
 
                                 <StackPanel Grid.Column="0">
                                     <Grid Margin="0,0,0,4">
-                                        <TextBlock Text="Temperature" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" />
+                                        <TextBlock Text="Temperature" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" />
                                         <TextBlock x:Name="TempValueText"
                                                    Text="0.10"
-                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                                    FontSize="11.5"
                                                    HorizontalAlignment="Right" />
                                     </Grid>
@@ -363,7 +446,7 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Доп. системный промпт (необязательно)" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBlock Text="Доп. системный промпт (необязательно)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <TextBox x:Name="SystemPromptBox" Style="{StaticResource InputTextBoxStyle}" />
                                 </StackPanel>
                             </Grid>
@@ -377,15 +460,15 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Background="{StaticResource BgSurfaceBrush}"
-                            BorderBrush="{StaticResource BorderBrush}"
+                    <Border Background="{DynamicResource BgSurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="8"
+                            CornerRadius="{DynamicResource CardRadius}"
                             Padding="14"
                             Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Поведение и тайминги"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        FontSize="13.5"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,10" />
@@ -402,22 +485,22 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Порт CDP" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBlock Text="Порт CDP" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <TextBox x:Name="CdpPortBox" Style="{StaticResource InputTextBoxStyle}" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Пауза ответа (мс)" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBlock Text="Пауза ответа (мс)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <TextBox x:Name="SubmitDelayBox" Style="{StaticResource InputTextBoxStyle}" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="4">
-                                    <TextBlock Text="Пауза шага (мс)" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBlock Text="Пауза шага (мс)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <TextBox x:Name="StepDelayBox" Style="{StaticResource InputTextBoxStyle}" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="6">
-                                    <TextBlock Text="Макс. шагов" Foreground="{StaticResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBlock Text="Макс. шагов" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <TextBox x:Name="MaxStepsBox" Style="{StaticResource InputTextBoxStyle}" />
                                 </StackPanel>
                             </Grid>
@@ -452,10 +535,10 @@
             </ScrollViewer>
 
             <Border Grid.Row="2"
-                    Background="#141417"
-                    BorderBrush="{StaticResource BorderBrush}"
+                    Background="{DynamicResource BgChromeBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="0,1,0,0"
-                    CornerRadius="0,0,10,10"
+                    CornerRadius="{DynamicResource FooterRadius}"
                     Padding="14,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -466,7 +549,7 @@
                     <TextBlock x:Name="StatusText"
                                Grid.Column="1"
                                Text="Готово."
-                               Foreground="{StaticResource TextMutedBrush}"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="11.5"
                                VerticalAlignment="Center" />
                 </Grid>
