@@ -108,6 +108,17 @@ namespace YandexSolver
                     if (type === 'hidden' || type === 'submit' || type === 'button') continue;
                     var labelEl = el.closest('label') || el.parentElement;
                     var label = clean(el.getAttribute('aria-label') || (labelEl ? labelEl.innerText : '') || el.placeholder || '');
+                    var td = el.closest('td, th');
+                    if (td) {
+                        var tr = td.closest('tr');
+                        var tbl = td.closest('table');
+                        var colHdr = '';
+                        if (tbl && tbl.rows && tbl.rows.length > 0 && tbl.rows[0].cells && tbl.rows[0].cells[td.cellIndex]) {
+                            colHdr = clean(tbl.rows[0].cells[td.cellIndex].innerText);
+                        }
+                        var rowTxt = tr ? clean(tr.innerText) : '';
+                        label = clean((colHdr ? colHdr + ' | ' : '') + rowTxt + (label ? ' | ' + label : ''));
+                    }
                     if (tag === 'select') {
                         var opts = Array.prototype.slice.call(el.options).map(function(o) { return clean(o.text); }).filter(Boolean);
                         label = (label + ' [options: ' + opts.join(' | ') + ']').trim();
@@ -453,8 +464,8 @@ namespace YandexSolver
                     }
                 }
                 if (!filled && visible.length >= 2) {
-                    if (creds.school) setNativeValue(visible[0], creds.school);
-                    if (creds.login) setNativeValue(visible[1], creds.login);
+                    if (creds.login) setNativeValue(visible[0], creds.login);
+                    if (creds.school) setNativeValue(visible[1], creds.school);
                     filled = true;
                 }
                 return filled;
@@ -480,7 +491,7 @@ namespace YandexSolver
                     if (!isVisible(b) || b.disabled) continue;
                     var t = clean(b.innerText);
                     for (var k = 0; k < targets.length; k++) {
-                        if (t === targets[k] || t.indexOf(targets[k]) === 0) {
+                        if (t === targets[k] || t.indexOf(targets[k]) >= 0) {
                             b.click();
                             return true;
                         }

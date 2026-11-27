@@ -796,12 +796,12 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Код школы (для автовхода)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="SchoolCodeBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
                                     <TextBlock Text="Логин ученика" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
                                     <TextBox x:Name="StudentLoginBox" Style="{StaticResource InputTextBoxStyle}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Код школы (для автовхода)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
+                                    <TextBox x:Name="SchoolCodeBox" Style="{StaticResource InputTextBoxStyle}" />
                                 </StackPanel>
                                 <Button Grid.Column="4"
                                         VerticalAlignment="Bottom"

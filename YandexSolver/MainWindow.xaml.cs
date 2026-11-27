@@ -548,6 +548,11 @@ namespace YandexSolver
                 for (int step = 1; step <= _settings.MaxSteps && !_runCts.IsCancellationRequested; step++)
                 {
                     SetStatus("Читаю задание со страницы...", LoadingDot);
+                    if (await automation.ClickButtonAsync(new[] { "продолжение" }, _runCts.Token))
+                    {
+                        AppendLog("Нажато «Продолжение» (прокрутка).");
+                        await Task.Delay(500, _runCts.Token);
+                    }
                     PageTaskState state = await automation.ExtractStateAsync(_runCts.Token);
                     UpdateTaskPreview(state);
                     AppendLog(string.Format("[Шаг {0}] Элементов: {1} | Ответить: {2}", step, state.Controls.Count, state.HasSubmit));
@@ -801,8 +806,10 @@ namespace YandexSolver
                 bool ok = await automation.FillYandexKidsLoginAsync(_settings.SchoolCode, _settings.StudentLogin, CancellationToken.None);
                 if (ok)
                 {
-                    SetStatus("Данные для входа подставлены.", SuccessDot);
-                    AppendLog("Автовход: поля заполнены.");
+                    await Task.Delay(350);
+                    await automation.ClickButtonAsync(new[] { "войти" }, CancellationToken.None);
+                    SetStatus("Данные подставлены, нажато «Войти».", SuccessDot);
+                    AppendLog("Автовход: поля заполнены и нажато «Войти».");
                 }
                 else
                 {
