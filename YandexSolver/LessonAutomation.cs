@@ -159,11 +159,23 @@ namespace YandexSolver
                     });
                 }
 
+                var pickedEls = [];
+                function isDup(el) {
+                    var er = el.getBoundingClientRect();
+                    for (var p = 0; p < pickedEls.length; p++) {
+                        var prev = pickedEls[p];
+                        if (prev.contains(el) || el.contains(prev)) return true;
+                        var pr = prev.getBoundingClientRect();
+                        if (Math.abs((er.left + er.width / 2) - (pr.left + pr.width / 2)) < 10 && Math.abs((er.top + er.height / 2) - (pr.top + pr.height / 2)) < 10) return true;
+                    }
+                    return false;
+                }
                 var rawEls = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""], [role=""combobox""], [aria-haspopup=""listbox""], [aria-haspopup=""menu""], [aria-expanded], button.Select2-Button');
                 for (var j = 0; j < rawEls.length; j++) {
                     var el = rawEls[j];
                     if (el.closest('.CodeMirror')) continue;
                     if (!isVisible(el)) continue;
+                    if (isDup(el)) continue;
                     var tag = el.tagName.toLowerCase();
                     var roleAttr = (el.getAttribute('role') || '').toLowerCase();
                     var hasPopup = (el.getAttribute('aria-haspopup') || '').toLowerCase();
@@ -171,6 +183,7 @@ namespace YandexSolver
                     var isDrop = tag === 'select' || roleAttr === 'combobox' || hasPopup === 'listbox' || hasPopup === 'menu' || el.hasAttribute('aria-expanded') || /select2-button|dropdown/i.test(cls);
                     var type = (isDrop ? 'dropdown' : (el.getAttribute('type') || roleAttr || tag)).toLowerCase();
                     if (!isDrop && (type === 'hidden' || type === 'submit' || type === 'button')) continue;
+                    pickedEls.push(el);
                     var labelEl = el.closest('label') || el.previousElementSibling || (el.parentElement && clean(el.parentElement.innerText).length <= 200 ? el.parentElement : null);
                     var label = clean(el.getAttribute('aria-label') || (labelEl ? labelEl.innerText : '') || el.placeholder || '');
                     var td = el.closest('td, th');
@@ -806,10 +819,20 @@ namespace YandexSolver
                             var list = [];
                             var cmEls = document.querySelectorAll('.CodeMirror');
                             for (var c = 0; c < cmEls.length; c++) { if (isVisible(cmEls[c]) && cmEls[c].CodeMirror) list.push(cmEls[c]); }
+                            function isDup(el) {
+                                var er = el.getBoundingClientRect();
+                                for (var p = 0; p < list.length; p++) {
+                                    var prev = list[p];
+                                    if (prev.contains(el) || el.contains(prev)) return true;
+                                    var pr = prev.getBoundingClientRect();
+                                    if (Math.abs((er.left + er.width / 2) - (pr.left + pr.width / 2)) < 10 && Math.abs((er.top + er.height / 2) - (pr.top + pr.height / 2)) < 10) return true;
+                                }
+                                return false;
+                            }
                             var raw = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""], [role=""combobox""], [aria-haspopup=""listbox""], [aria-haspopup=""menu""], [aria-expanded], button.Select2-Button');
                             for (var i = 0; i < raw.length; i++) {
                                 var el = raw[i];
-                                if (el.closest('.CodeMirror') || !isVisible(el)) continue;
+                                if (el.closest('.CodeMirror') || !isVisible(el) || isDup(el)) continue;
                                 var tag = el.tagName.toLowerCase();
                                 var roleAttr = (el.getAttribute('role') || '').toLowerCase();
                                 var hasPopup = (el.getAttribute('aria-haspopup') || '').toLowerCase();
