@@ -248,7 +248,7 @@ namespace YandexSolver
                 case "Groq":
                     return new KeyValuePair<string, string>(
                         "https://api.groq.com/openai/v1",
-                        "llama-3.3-70b-versatile");
+                        "openai/gpt-oss-120b");
                 case "OpenAI":
                     return new KeyValuePair<string, string>(
                         "https://api.openai.com/v1",
