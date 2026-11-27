@@ -285,20 +285,29 @@ namespace YandexSolver
             }
         }
 
+        private void LaunchChrome_Click(object sender, RoutedEventArgs e)
+        {
+            LaunchBrowserWithCdp("Chrome", FindChromePath(), "ChromeProfile");
+        }
+
         private void LaunchEdge_Click(object sender, RoutedEventArgs e)
         {
+            LaunchBrowserWithCdp("Edge", FindEdgePath(), "EdgeProfile");
+        }
+
+        private void LaunchBrowserWithCdp(string name, string exePath, string profileFolder)
+        {
             ReadSettingsFromUi();
-            string edgePath = FindEdgePath();
-            if (string.IsNullOrEmpty(edgePath))
+            if (string.IsNullOrEmpty(exePath))
             {
-                SetStatus("Microsoft Edge не найден.", ErrorDot);
+                SetStatus(name + " не найден.", ErrorDot);
                 return;
             }
 
             string profileDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "YandexUchebnikSolver",
-                "EdgeProfile");
+                profileFolder);
             Directory.CreateDirectory(profileDir);
 
             string args = string.Format(
@@ -306,9 +315,27 @@ namespace YandexSolver
                 _settings.CdpPort,
                 profileDir);
 
-            Process.Start(new ProcessStartInfo(edgePath, args) { UseShellExecute = true });
-            AppendLog("Запущен Edge на порту " + _settings.CdpPort + ".");
-            SetStatus("Edge запущен. Войдите в аккаунт и нажмите «Подключить».", LoadingDot);
+            Process.Start(new ProcessStartInfo(exePath, args) { UseShellExecute = true });
+            AppendLog("Запущен " + name + " на порту " + _settings.CdpPort + ".");
+            SetStatus(name + " запущен. Войдите в аккаунт и нажмите «Подключить».", LoadingDot);
+        }
+
+        private static string FindChromePath()
+        {
+            string[] candidates =
+            {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Google\Chrome\Application\chrome.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Google\Chrome\Application\chrome.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Google\Chrome\Application\chrome.exe")
+            };
+            foreach (string path in candidates)
+            {
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+            return string.Empty;
         }
 
         private static string FindEdgePath()

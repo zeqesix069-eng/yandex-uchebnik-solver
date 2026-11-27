@@ -113,34 +113,41 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="Браузер Edge (CDP)"
+                            <TextBlock Text="Браузер (Chrome / Edge CDP)"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
                                        FontSize="13"
                                        FontWeight="SemiBold" />
                             <TextBlock x:Name="BrowserStatusLabel"
-                                       Text="Запустите Edge, войдите в учебник и подключитесь"
+                                       Text="Откройте браузер, войдите в учебник и подключитесь"
                                        Foreground="{DynamicResource TextMutedBrush}"
                                        FontSize="12"
                                        Margin="0,2,0,0" />
                         </StackPanel>
 
                         <Button Grid.Column="1"
-                                Content="Открыть Edge"
+                                Content="Chrome"
                                 Style="{StaticResource SecondaryButtonStyle}"
-                                Click="LaunchEdge_Click"
+                                Click="LaunchChrome_Click"
                                 Margin="8,0,6,0" />
 
                         <Button Grid.Column="2"
+                                Content="Edge"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Click="LaunchEdge_Click"
+                                Margin="0,0,6,0" />
+
+                        <Button Grid.Column="3"
                                 x:Name="ConnectButton"
                                 Content="Подключить"
                                 Style="{StaticResource SecondaryButtonStyle}"
                                 Click="ConnectCdp_Click"
                                 Margin="0,0,6,0" />
 
-                        <Button Grid.Column="3"
+                        <Button Grid.Column="4"
                                 Content="Обновить"
                                 Style="{StaticResource SecondaryButtonStyle}"
                                 Click="RefreshTask_Click" />
