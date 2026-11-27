@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -8,6 +10,9 @@ namespace YandexSolver
     {
         private const string DllName = "SolverCore.dll";
         private const int BufferSize = 262144;
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         private static extern int ys_http_get(
@@ -26,6 +31,62 @@ namespace YandexSolver
             double temperature,
             byte[] outBuf,
             int outBufSize);
+
+        static NativeSolverBridge()
+        {
+            EnsureNativeLibraryLoaded();
+        }
+
+        private static void EnsureNativeLibraryLoaded()
+        {
+            string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, DllName);
+            if (File.Exists(localPath))
+            {
+                LoadLibrary(localPath);
+                return;
+            }
+
+            string extractDir = Path.Combine(Path.GetTempPath(), "EduToolsNative");
+            Directory.CreateDirectory(extractDir);
+            string extractedPath = Path.Combine(extractDir, DllName);
+
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(DllName))
+            {
+                if (stream == null)
+                {
+                    return;
+                }
+
+                bool needsWrite = !File.Exists(extractedPath);
+                if (!needsWrite)
+                {
+                    var fi = new FileInfo(extractedPath);
+                    if (fi.Length != stream.Length)
+                    {
+                        needsWrite = true;
+                    }
+                }
+
+                if (needsWrite)
+                {
+                    try
+                    {
+                        using (var fs = new FileStream(extractedPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                        {
+                            stream.CopyTo(fs);
+                        }
+                    }
+                    catch (IOException)
+                    {
+                    }
+                }
+            }
+
+            if (File.Exists(extractedPath))
+            {
+                LoadLibrary(extractedPath);
+            }
+        }
 
         private static byte[] ToUtf8Z(string value)
         {

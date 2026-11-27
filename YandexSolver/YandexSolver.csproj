@@ -54,5 +54,10 @@
     <Compile Include="NativeSolverBridge.cs" />
     <Compile Include="ThemeManager.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\build\Release\SolverCore.dll">
+      <LogicalName>SolverCore.dll</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
