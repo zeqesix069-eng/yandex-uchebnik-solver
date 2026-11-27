@@ -99,15 +99,19 @@ namespace YandexSolver
                     });
                 }
 
-                var rawEls = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""], [role=""combobox""], [aria-haspopup=""listbox""], button.Select2-Button');
+                var rawEls = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""], [role=""combobox""], [aria-haspopup=""listbox""], [aria-haspopup=""menu""], [aria-expanded], button.Select2-Button');
                 for (var j = 0; j < rawEls.length; j++) {
                     var el = rawEls[j];
                     if (el.closest('.CodeMirror')) continue;
                     if (!isVisible(el)) continue;
                     var tag = el.tagName.toLowerCase();
-                    var type = (el.getAttribute('type') || el.getAttribute('role') || (tag === 'button' ? 'dropdown' : tag)).toLowerCase();
-                    if (type === 'hidden' || type === 'submit' || type === 'button') continue;
-                    var labelEl = el.closest('label') || el.parentElement;
+                    var roleAttr = (el.getAttribute('role') || '').toLowerCase();
+                    var hasPopup = (el.getAttribute('aria-haspopup') || '').toLowerCase();
+                    var cls = String(el.className || '');
+                    var isDrop = tag === 'select' || roleAttr === 'combobox' || hasPopup === 'listbox' || hasPopup === 'menu' || el.hasAttribute('aria-expanded') || /select2-button|dropdown/i.test(cls);
+                    var type = (isDrop ? 'dropdown' : (el.getAttribute('type') || roleAttr || tag)).toLowerCase();
+                    if (!isDrop && (type === 'hidden' || type === 'submit' || type === 'button')) continue;
+                    var labelEl = el.closest('label') || el.previousElementSibling || (el.parentElement && clean(el.parentElement.innerText).length <= 200 ? el.parentElement : null);
                     var label = clean(el.getAttribute('aria-label') || (labelEl ? labelEl.innerText : '') || el.placeholder || '');
                     var td = el.closest('td, th');
                     if (td) {
@@ -133,6 +137,36 @@ namespace YandexSolver
                     });
                 }
 
+                if (controls.length === 0) {
+                    var dropRoot = document.querySelector('.problem__block-list') || document.querySelector('main') || document.body;
+                    var cand = dropRoot.querySelectorAll('button, [role=""button""], [tabindex=""0""]');
+                    var ignoreBtns = ['ответить', 'проверить', 'дальше', 'далее', 'продолжить', 'завершить', 'ещё раз', 'еще раз', 'сбросить', 'закрыть', 'подсказка', 'продолжение', 'закрыть подсказку'];
+                    for (var d = 0; d < cand.length; d++) {
+                        var cel = cand[d];
+                        if (!isVisible(cel) || cel.disabled) continue;
+                        if (cel.closest('header, nav, footer')) continue;
+                        var cr = cel.getBoundingClientRect();
+                        if (cr.width < 32 || cr.width > 320 || cr.height < 18 || cr.height > 64) continue;
+                        var ctxt = clean(cel.innerText);
+                        var clow = ctxt.toLowerCase();
+                        if (!ctxt || ctxt.length > 45) continue;
+                        var isIgnored = false;
+                        for (var ig = 0; ig < ignoreBtns.length; ig++) {
+                            if (clow === ignoreBtns[ig] || clow.indexOf(ignoreBtns[ig]) >= 0) { isIgnored = true; break; }
+                        }
+                        if (isIgnored) continue;
+                        var clblEl = cel.closest('label') || cel.previousElementSibling || (cel.parentElement && clean(cel.parentElement.innerText).length <= 200 ? cel.parentElement : null);
+                        var clbl = clean(cel.getAttribute('aria-label') || (clblEl ? clblEl.innerText : '') || '');
+                        controls.push({
+                            index: controls.length,
+                            kind: 'dropdown',
+                            label: clbl.slice(0, 350),
+                            value: ctxt,
+                            checked: false
+                        });
+                    }
+                }
+
                 return JSON.stringify({
                     url: location.href,
                     questionText: qText.slice(0, 6000),
@@ -140,7 +174,7 @@ namespace YandexSolver
                     hasNext: hasNext,
                     hasFinish: hasFinish,
                     isCorrectBanner: bodyText.indexOf('Этот ответ правильный') >= 0 || bodyText.indexOf('Правильно') >= 0,
-                    isErrorBanner: bodyText.indexOf('Попробуй ещё') >= 0 || bodyText.indexOf('Неправильно') >= 0 || bodyText.indexOf('Ошибка') >= 0,
+                    isErrorBanner: bodyText.indexOf('Попробуй ещё') >= 0 || bodyText.indexOf('Неправильно') >= 0 || bodyText.indexOf('Ответ неверный') >= 0 || bodyText.indexOf('Ошибка') >= 0,
                     controls: controls,
                     dragItems: [],
                     dropTargets: []
@@ -526,6 +560,116 @@ namespace YandexSolver
                 return "drag:" + moved;
             }
 
+            if (ansType == "inputs" && answerDict.ContainsKey("values") && answerDict["values"] is ArrayList && state.Controls.Exists(c => c.Kind == "dropdown"))
+            {
+                var vals = (ArrayList)answerDict["values"];
+                int appliedDrops = 0;
+                for (int m = 0; m < vals.Count && m < state.Controls.Count; m++)
+                {
+                    string targetVal = Convert.ToString(vals[m]) ?? string.Empty;
+                    string clickTriggerJs = @"(function(idx) {
+                        function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
+                        function isVisible(el) { if (!el) return false; var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
+                        function collect() {
+                            var list = [];
+                            var cmEls = document.querySelectorAll('.CodeMirror');
+                            for (var c = 0; c < cmEls.length; c++) { if (isVisible(cmEls[c]) && cmEls[c].CodeMirror) list.push(cmEls[c]); }
+                            var raw = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""], [role=""combobox""], [aria-haspopup=""listbox""], [aria-haspopup=""menu""], [aria-expanded], button.Select2-Button');
+                            for (var i = 0; i < raw.length; i++) {
+                                var el = raw[i];
+                                if (el.closest('.CodeMirror') || !isVisible(el)) continue;
+                                var tag = el.tagName.toLowerCase();
+                                var roleAttr = (el.getAttribute('role') || '').toLowerCase();
+                                var hasPopup = (el.getAttribute('aria-haspopup') || '').toLowerCase();
+                                var cls = String(el.className || '');
+                                var isDrop = tag === 'select' || roleAttr === 'combobox' || hasPopup === 'listbox' || hasPopup === 'menu' || el.hasAttribute('aria-expanded') || /select2-button|dropdown/i.test(cls);
+                                var t = (isDrop ? 'dropdown' : (el.getAttribute('type') || roleAttr || tag)).toLowerCase();
+                                if (!isDrop && (t === 'hidden' || t === 'submit' || t === 'button')) continue;
+                                list.push(el);
+                            }
+                            if (list.length === 0) {
+                                var dropRoot = document.querySelector('.problem__block-list') || document.querySelector('main') || document.body;
+                                var cand = dropRoot.querySelectorAll('button, [role=""button""], [tabindex=""0""]');
+                                var ignoreBtns = ['ответить', 'проверить', 'дальше', 'далее', 'продолжить', 'завершить', 'ещё раз', 'еще раз', 'сбросить', 'закрыть', 'подсказка', 'продолжение', 'закрыть подсказку'];
+                                for (var d = 0; d < cand.length; d++) {
+                                    var cel = cand[d];
+                                    if (!isVisible(cel) || cel.disabled || cel.closest('header, nav, footer')) continue;
+                                    var cr = cel.getBoundingClientRect();
+                                    if (cr.width < 32 || cr.width > 320 || cr.height < 18 || cr.height > 64) continue;
+                                    var ctxt = clean(cel.innerText);
+                                    var clow = ctxt.toLowerCase();
+                                    if (!ctxt || ctxt.length > 45) continue;
+                                    var ig = false;
+                                    for (var k = 0; k < ignoreBtns.length; k++) { if (clow === ignoreBtns[k] || clow.indexOf(ignoreBtns[k]) >= 0) { ig = true; break; } }
+                                    if (!ig) list.push(cel);
+                                }
+                            }
+                            return list;
+                        }
+                        var els = collect();
+                        var el = els[idx];
+                        if (!el) return 'missing';
+                        if (el.tagName.toLowerCase() === 'select') return 'native-select';
+                        el.scrollIntoView({ block: 'center' });
+                        el.click();
+                        return 'opened';
+                    })(" + m + ")";
+
+                    object trigRes = await _cdp.EvaluateAsync(clickTriggerJs, state.TargetContextId, ct).ConfigureAwait(false);
+                    string trigStatus = Convert.ToString(trigRes);
+                    if (trigStatus == "native-select")
+                    {
+                        string selectJs = @"(function(idx, val) {
+                            function isVisible(el) { if (!el) return false; var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
+                            var els = document.querySelectorAll('select');
+                            var el = els[idx];
+                            if (!el) return false;
+                            var target = String(val || '').trim().toLowerCase();
+                            for (var o = 0; o < el.options.length; o++) {
+                                if (el.options[o].text.trim().toLowerCase() === target || el.options[o].value.trim().toLowerCase() === target) {
+                                    el.selectedIndex = o;
+                                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                                    return true;
+                                }
+                            }
+                            return false;
+                        })(" + m + ", " + _json.Serialize(targetVal) + ")";
+                        await _cdp.EvaluateAsync(selectJs, state.TargetContextId, ct).ConfigureAwait(false);
+                        appliedDrops++;
+                        continue;
+                    }
+
+                    if (trigStatus == "opened")
+                    {
+                        await Task.Delay(90, ct).ConfigureAwait(false);
+                        string pickJs = @"(function(val) {
+                            function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
+                            function isVisible(el) { if (!el) return false; var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
+                            var target = String(val || '').trim().toLowerCase();
+                            var selectors = '[role=""option""], [role=""menuitem""], .Select2-Item, .Menu-Item, [role=""listbox""] > *, [role=""menu""] > *, ul > li, [class*=""option"" i], [class*=""item"" i], [class*=""menu"" i] div, [class*=""dropdown"" i] div';
+                            var items = document.querySelectorAll(selectors);
+                            var partial = null;
+                            for (var k = 0; k < items.length; k++) {
+                                var it = items[k];
+                                if (!isVisible(it)) continue;
+                                var r = it.getBoundingClientRect();
+                                if (r.height > 64 || r.width > 380) continue;
+                                var txt = clean(it.innerText).toLowerCase();
+                                if (!txt) continue;
+                                if (txt === target) { it.click(); return true; }
+                                if (!partial && txt.indexOf(target) >= 0 && txt.length <= target.length + 20) partial = it;
+                            }
+                            if (partial) { partial.click(); return true; }
+                            return false;
+                        })(" + _json.Serialize(targetVal) + ")";
+                        object picked = await _cdp.EvaluateAsync(pickJs, state.TargetContextId, ct).ConfigureAwait(false);
+                        if (picked is bool && (bool)picked) appliedDrops++;
+                        await Task.Delay(60, ct).ConfigureAwait(false);
+                    }
+                }
+                return "inputs:" + appliedDrops;
+            }
+
             string actionJson = _json.Serialize(answerDict);
             string applyScript = @"(function(ans) {
                 function isVisible(el) {
@@ -801,6 +945,7 @@ namespace YandexSolver
             sb.AppendLine("   - Если kind=radio: выбери ровно 1 индекс.");
             sb.AppendLine("   - Если kind=checkbox (квадратики): в Яндекс Учебнике обычно 2 и более верных ответа — обязательно укажи ВСЕ подходящие индексы (не меньше 2).");
             sb.AppendLine("2) Для ввода текста/чисел/кода/списков по порядку: {\"type\":\"inputs\",\"values\":[\"ответ\"]}");
+            sb.AppendLine("   - Для kind=dropdown укажи в values точный текст выбранного пункта для каждого выпадающего списка по порядку.");
             sb.AppendLine("   - ВАЖНО для kind=code: поле value содержит ВЕСЬ код файла! Верни в values ПОЛНЫЙ обновлённый код всего файла целиком (сохранив <html>, <head>, <style>, <body> и прочий шаблон), а не только добавленный фрагмент.");
             if (state.IsReorderList)
             {

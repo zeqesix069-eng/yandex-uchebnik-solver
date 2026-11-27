@@ -588,10 +588,10 @@ namespace YandexSolver
                 for (int step = 1; step <= _settings.MaxSteps && !_runCts.IsCancellationRequested; step++)
                 {
                     SetStatus("Читаю задание со страницы...", LoadingDot);
-                    if (await automation.ClickButtonAsync(new[] { "продолжение" }, _runCts.Token))
+                    if (await automation.ClickButtonAsync(new[] { "продолжение", "ещё раз", "еще раз" }, _runCts.Token))
                     {
-                        AppendLog("Нажато «Продолжение» (прокрутка).");
-                        await Task.Delay(500, _runCts.Token);
+                        AppendLog("Нажата кнопка перехода/повтора.");
+                        await Task.Delay(450, _runCts.Token);
                     }
                     PageTaskState state = await automation.ExtractStateAsync(_runCts.Token);
                     UpdateTaskPreview(state);
