@@ -180,12 +180,15 @@ namespace YandexSolver
                     var roleAttr = (el.getAttribute('role') || '').toLowerCase();
                     var hasPopup = (el.getAttribute('aria-haspopup') || '').toLowerCase();
                     var cls = String(el.className || '');
-                    var isDrop = tag === 'select' || roleAttr === 'combobox' || hasPopup === 'listbox' || hasPopup === 'menu' || el.hasAttribute('aria-expanded') || /select2-button|dropdown/i.test(cls);
+                    var isDrop = tag === 'select' || roleAttr === 'combobox' || hasPopup === 'listbox' || hasPopup === 'menu' || el.hasAttribute('aria-expanded') || /select2-button/i.test(cls);
                     var type = (isDrop ? 'dropdown' : (el.getAttribute('type') || roleAttr || tag)).toLowerCase();
                     if (!isDrop && (type === 'hidden' || type === 'submit' || type === 'button')) continue;
                     pickedEls.push(el);
-                    var labelEl = el.closest('label') || el.previousElementSibling || (el.parentElement && clean(el.parentElement.innerText).length <= 200 ? el.parentElement : null);
-                    var label = clean(el.getAttribute('aria-label') || (labelEl ? labelEl.innerText : '') || el.placeholder || '');
+                    var ariaLbl = clean(el.getAttribute('aria-label') || '');
+                    if (ariaLbl.toLowerCase() === 'выберите вариант') ariaLbl = '';
+                    var rowContainer = el.closest('p, li, tr, [class*=""row"" i], [class*=""line"" i]');
+                    var labelEl = el.closest('label') || el.previousElementSibling || (rowContainer && clean(rowContainer.innerText).length <= 200 ? rowContainer : null) || (el.parentElement && clean(el.parentElement.innerText).length <= 200 ? el.parentElement : null);
+                    var label = clean(ariaLbl || (labelEl ? labelEl.innerText : '') || el.placeholder || '');
                     var td = el.closest('td, th');
                     if (td) {
                         var tr = td.closest('tr');
@@ -837,7 +840,7 @@ namespace YandexSolver
                                 var roleAttr = (el.getAttribute('role') || '').toLowerCase();
                                 var hasPopup = (el.getAttribute('aria-haspopup') || '').toLowerCase();
                                 var cls = String(el.className || '');
-                                var isDrop = tag === 'select' || roleAttr === 'combobox' || hasPopup === 'listbox' || hasPopup === 'menu' || el.hasAttribute('aria-expanded') || /select2-button|dropdown/i.test(cls);
+                                var isDrop = tag === 'select' || roleAttr === 'combobox' || hasPopup === 'listbox' || hasPopup === 'menu' || el.hasAttribute('aria-expanded') || /select2-button/i.test(cls);
                                 var t = (isDrop ? 'dropdown' : (el.getAttribute('type') || roleAttr || tag)).toLowerCase();
                                 if (!isDrop && (t === 'hidden' || t === 'submit' || t === 'button')) continue;
                                 list.push(el);
