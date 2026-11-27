@@ -655,7 +655,7 @@ namespace YandexSolver
                 }
             }
 
-            if (state.HasSubmit && (state.HasVisuals || state.DragItems.Count > 0 || state.Controls.Count == 0))
+            if (state.HasSubmit && (state.HasVisuals || state.DragItems.Count > 0))
             {
                 try
                 {

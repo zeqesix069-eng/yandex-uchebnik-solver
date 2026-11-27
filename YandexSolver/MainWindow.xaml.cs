@@ -636,6 +636,10 @@ namespace YandexSolver
                         }
 
                         SetStatus("Решаю через " + _settings.Model + "...", LoadingDot);
+                        if (!string.IsNullOrEmpty(state.ScreenshotBase64))
+                        {
+                            AppendLog("Прикреплён скриншот задания (Vision).");
+                        }
                         applied = await automation.SolveAndApplyAsync(state, _settings, string.Empty, _runCts.Token);
                         AppendLog("ИИ: " + automation.LastLlmResponse);
                     }
