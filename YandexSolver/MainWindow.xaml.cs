@@ -637,10 +637,9 @@ namespace YandexSolver
                         }
                         await automation.ClickButtonAsync(new[] { "ответить", "проверить" }, _runCts.Token);
                         AppendLog("Нажато «Ответить».");
-                        await Task.Delay(1600, _runCts.Token);
                     }
 
-                    PageTaskState after = await automation.ExtractStateAsync(_runCts.Token);
+                    PageTaskState after = await WaitForVerdictAsync(automation, _runCts.Token);
                     UpdateTaskPreview(after);
 
                     if (after.IsErrorBanner && _settings.RetryOnWrong && after.HasSubmit)
@@ -713,6 +712,21 @@ namespace YandexSolver
                     _runCts = null;
                 }
             }
+        }
+
+        private async Task<PageTaskState> WaitForVerdictAsync(LessonAutomation automation, CancellationToken ct)
+        {
+            PageTaskState latest = null;
+            for (int i = 0; i < 8; i++)
+            {
+                await Task.Delay(450, ct);
+                latest = await automation.ExtractStateAsync(ct);
+                if (latest.HasNext || latest.HasFinish || latest.IsErrorBanner || latest.IsCorrectBanner)
+                {
+                    break;
+                }
+            }
+            return latest ?? await automation.ExtractStateAsync(ct);
         }
 
         private void SetRunningState(bool running)
