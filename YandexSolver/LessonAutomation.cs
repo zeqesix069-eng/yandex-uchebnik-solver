@@ -171,9 +171,10 @@ namespace YandexSolver
                     return false;
                 }
                 var rawEls = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""], [role=""combobox""], [aria-haspopup=""listbox""], [aria-haspopup=""menu""], [aria-expanded], button.Select2-Button');
+                var hasNamedDrops = document.querySelectorAll('[aria-label=""Выберите вариант""]').length >= 2;
                 for (var j = 0; j < rawEls.length; j++) {
                     var el = rawEls[j];
-                    if (el.closest('.CodeMirror')) continue;
+                    if (el.closest('.CodeMirror, [role=""listbox""], [role=""menu""], [role=""option""]')) continue;
                     if (!isVisible(el)) continue;
                     if (isDup(el)) continue;
                     var tag = el.tagName.toLowerCase();
@@ -181,6 +182,7 @@ namespace YandexSolver
                     var hasPopup = (el.getAttribute('aria-haspopup') || '').toLowerCase();
                     var cls = String(el.className || '');
                     var isDrop = tag === 'select' || roleAttr === 'combobox' || hasPopup === 'listbox' || hasPopup === 'menu' || el.hasAttribute('aria-expanded') || /select2-button/i.test(cls);
+                    if (hasNamedDrops && isDrop && clean(el.getAttribute('aria-label') || '').toLowerCase() !== 'выберите вариант') continue;
                     var type = (isDrop ? 'dropdown' : (el.getAttribute('type') || roleAttr || tag)).toLowerCase();
                     if (!isDrop && (type === 'hidden' || type === 'submit' || type === 'button')) continue;
                     pickedEls.push(el);
@@ -834,14 +836,16 @@ namespace YandexSolver
                                 return false;
                             }
                             var raw = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""], [role=""combobox""], [aria-haspopup=""listbox""], [aria-haspopup=""menu""], [aria-expanded], button.Select2-Button');
+                            var hasNamedDrops = document.querySelectorAll('[aria-label=""Выберите вариант""]').length >= 2;
                             for (var i = 0; i < raw.length; i++) {
                                 var el = raw[i];
-                                if (el.closest('.CodeMirror') || !isVisible(el) || isDup(el)) continue;
+                                if (el.closest('.CodeMirror, [role=""listbox""], [role=""menu""], [role=""option""]') || !isVisible(el) || isDup(el)) continue;
                                 var tag = el.tagName.toLowerCase();
                                 var roleAttr = (el.getAttribute('role') || '').toLowerCase();
                                 var hasPopup = (el.getAttribute('aria-haspopup') || '').toLowerCase();
                                 var cls = String(el.className || '');
                                 var isDrop = tag === 'select' || roleAttr === 'combobox' || hasPopup === 'listbox' || hasPopup === 'menu' || el.hasAttribute('aria-expanded') || /select2-button/i.test(cls);
+                                if (hasNamedDrops && isDrop && clean(el.getAttribute('aria-label') || '').toLowerCase() !== 'выберите вариант') continue;
                                 var t = (isDrop ? 'dropdown' : (el.getAttribute('type') || roleAttr || tag)).toLowerCase();
                                 if (!isDrop && (t === 'hidden' || t === 'submit' || t === 'button')) continue;
                                 list.push(el);
@@ -921,49 +925,60 @@ namespace YandexSolver
                         int ty = Convert.ToInt32(trigDict["y"]);
                         await _cdp.ClickAtAsync(tx, ty, ct).ConfigureAwait(false);
                         await Task.Delay(140, ct).ConfigureAwait(false);
-                        string pickJs = @"(function(val) {
+                        string pickJs = @"(function(activeIdx, val) {
                             function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
                             function isVisible(el) { if (!el) return false; var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
-                            function isTrigger(el) {
+                            var activeTrig = window.__ysDrops ? window.__ysDrops[activeIdx] : null;
+                            var trigRect = activeTrig ? activeTrig.getBoundingClientRect() : null;
+                            function isOtherTrigger(el) {
                                 if (!window.__ysDrops) return false;
                                 for (var i = 0; i < window.__ysDrops.length; i++) {
-                                    if (window.__ysDrops[i] === el) return true;
+                                    var tr = window.__ysDrops[i];
+                                    if (tr === el || el.contains(tr)) return true;
+                                    if (i !== activeIdx && tr.contains(el)) return true;
                                 }
                                 return false;
                             }
                             var target = String(val || '').trim().toLowerCase();
-                            var items = document.querySelectorAll('[role=""option""], [role=""menuitem""], .Select2-Item, .Menu-Item, [role=""listbox""] *, [role=""menu""] *, ul li, button, div, span, a');
-                            var exactPopup = null;
-                            var exactAny = null;
-                            var partial = null;
-                            for (var k = 0; k < items.length; k++) {
-                                var it = items[k];
-                                if (!isVisible(it) || isTrigger(it)) continue;
-                                var r = it.getBoundingClientRect();
-                                if (r.height < 16 || r.height > 64 || r.width < 20 || r.width > 380) continue;
-                                var txt = clean(it.innerText).toLowerCase();
-                                if (!txt) continue;
-                                var hasMatchingChild = false;
-                                for (var c = 0; c < it.children.length; c++) {
-                                    if (clean(it.children[c].innerText).toLowerCase() === txt) { hasMatchingChild = true; break; }
+                            function findIn(nodeList) {
+                                var exactPopup = null;
+                                var exactAny = null;
+                                var partial = null;
+                                for (var k = 0; k < nodeList.length; k++) {
+                                    var it = nodeList[k];
+                                    if (!isVisible(it) || isOtherTrigger(it)) continue;
+                                    var r = it.getBoundingClientRect();
+                                    if (r.height < 16 || r.height > 64 || r.width < 20 || r.width > 380) continue;
+                                    if (trigRect && Math.abs(r.top - trigRect.top) < 6 && Math.abs(r.left - trigRect.left) < 12) continue;
+                                    var txt = clean(it.innerText).toLowerCase();
+                                    if (!txt) continue;
+                                    var hasMatchingChild = false;
+                                    for (var c = 0; c < it.children.length; c++) {
+                                        if (clean(it.children[c].innerText).toLowerCase() === txt) { hasMatchingChild = true; break; }
+                                    }
+                                    if (hasMatchingChild) continue;
+                                    if (txt === target) {
+                                        var inPopup = !!(it.closest('[role=""listbox""], [role=""menu""], [class*=""popup"" i], [class*=""menu"" i], [class*=""dropdown"" i], [class*=""list"" i]'));
+                                        if (inPopup) exactPopup = it;
+                                        exactAny = it;
+                                    } else if (!partial && target.length >= 2 && txt.indexOf(target) >= 0 && txt.length <= target.length + 20) {
+                                        partial = it;
+                                    }
                                 }
-                                if (hasMatchingChild) continue;
-                                if (txt === target) {
-                                    var inPopup = !!(it.closest('[role=""listbox""], [role=""menu""], [class*=""popup"" i], [class*=""menu"" i], [class*=""dropdown"" i], [class*=""list"" i]'));
-                                    if (inPopup) exactPopup = it;
-                                    exactAny = it;
-                                } else if (!partial && target.length >= 2 && txt.indexOf(target) >= 0 && txt.length <= target.length + 20) {
-                                    partial = it;
-                                }
+                                return exactPopup || exactAny || partial;
                             }
-                            var chosen = exactPopup || exactAny || partial;
+                            var scope = (activeTrig && activeTrig.parentElement) ? activeTrig.parentElement : document;
+                            var chosen = findIn(scope.querySelectorAll('[role=""option""], [role=""menuitem""], .Select2-Item, .Menu-Item, [role=""listbox""] *, [role=""menu""] *, ul li, button, div, span, a'));
+                            if (!chosen && scope !== document) {
+                                chosen = findIn(document.querySelectorAll('[role=""option""], [role=""menuitem""], .Select2-Item, .Menu-Item, [role=""listbox""] *, [role=""menu""] *, ul li'));
+                            }
                             if (chosen) {
                                 chosen.scrollIntoView({ block: 'nearest' });
                                 var rr = chosen.getBoundingClientRect();
                                 return JSON.stringify({ found: true, x: Math.round(rr.left + rr.width / 2), y: Math.round(rr.top + rr.height / 2) });
                             }
                             return JSON.stringify({ found: false });
-                        })(" + _json.Serialize(targetVal) + ")";
+                        })(" + m + ", " + _json.Serialize(targetVal) + ")";
                         object pickRaw = await _cdp.EvaluateAsync(pickJs, state.TargetContextId, ct).ConfigureAwait(false);
                         var pickDict = _json.Deserialize<Dictionary<string, object>>(Convert.ToString(pickRaw));
                         if (pickDict != null && GetBool(pickDict, "found"))
