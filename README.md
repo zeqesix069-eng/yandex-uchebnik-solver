@@ -1,4 +1,6 @@
-# Yandex Uchebnik Solver
+# EduTools (Yandex Uchebnik Solver + Урок Цифры)
+
+`by zxchomezxc`
 
 Десктопное приложение для полуавтоматического и автоматического прохождения заданий в Яндекс Учебнике через Edge CDP и внешние/локальные LLM API.
 
