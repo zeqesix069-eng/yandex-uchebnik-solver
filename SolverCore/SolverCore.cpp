@@ -233,7 +233,8 @@ HttpResponse executeHttp(
     const std::string& method,
     const std::string& url,
     const std::vector<std::wstring>& headers,
-    const std::string& body) {
+    const std::string& body,
+    int receiveTimeoutMs = 120000) {
     HttpResponse result;
     std::wstring wUrl = utf8ToWide(url);
 
@@ -258,7 +259,7 @@ HttpResponse executeHttp(
         return result;
     }
 
-    WinHttpSetTimeouts(hSession, 15000, 30000, 60000, 180000);
+    WinHttpSetTimeouts(hSession, 15000, 30000, 60000, receiveTimeoutMs);
 
     HINTERNET hConnect = WinHttpConnect(hSession, hostBuf, uc.nPort, 0);
     if (!hConnect) {
@@ -434,9 +435,11 @@ SOLVER_API int ys_solve_task_vision(
         }
     }
 
-    HttpResponse resp = executeHttp("POST", endpoint, headers, imgB64.empty() ? textPayload : visionPayload);
+    HttpResponse resp = imgB64.empty()
+        ? executeHttp("POST", endpoint, headers, textPayload, 120000)
+        : executeHttp("POST", endpoint, headers, visionPayload, 35000);
     if (!imgB64.empty() && (!resp.error.empty() || resp.statusCode == 400 || resp.statusCode == 422)) {
-        resp = executeHttp("POST", endpoint, headers, textPayload);
+        resp = executeHttp("POST", endpoint, headers, textPayload, 120000);
     }
     if (!resp.error.empty()) {
         writeOutput(resp.error, outBuf, outBufSize);

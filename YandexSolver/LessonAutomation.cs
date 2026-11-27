@@ -235,10 +235,11 @@ namespace YandexSolver
                 }
 
                 var hasVisuals = false;
-                var visEls = (blocks || main).querySelectorAll('img, svg, canvas, video, math');
+                var visRoot = document.querySelector('.problem__block-list') || main;
+                var visEls = visRoot ? visRoot.querySelectorAll('img, svg, canvas, video, math') : [];
                 for (var v = 0; v < visEls.length; v++) {
                     var vr = visEls[v].getBoundingClientRect();
-                    if (vr.width > 28 && vr.height > 28) { hasVisuals = true; break; }
+                    if (vr.width > 64 && vr.height > 64) { hasVisuals = true; break; }
                 }
 
                 return JSON.stringify({
