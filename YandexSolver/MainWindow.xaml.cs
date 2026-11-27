@@ -552,7 +552,7 @@ namespace YandexSolver
                     UpdateTaskPreview(state);
                     AppendLog(string.Format("[Шаг {0}] Элементов: {1} | Ответить: {2}", step, state.Controls.Count, state.HasSubmit));
 
-                    if (state.IsCorrectBanner || (!state.HasSubmit && state.Controls.Count == 0))
+                    if (state.IsCorrectBanner || (!state.HasSubmit && state.Controls.Count == 0 && state.DragItems.Count == 0))
                     {
                         if ((state.IsCorrectBanner || _settings.SkipTheory) && state.HasNext)
                         {
@@ -581,7 +581,8 @@ namespace YandexSolver
 
                     SetStatus("Решаю через " + _settings.Model + "...", LoadingDot);
                     string applied = await automation.SolveAndApplyAsync(state, _settings, string.Empty, _runCts.Token);
-                    AppendLog("Ответ: " + applied);
+                    AppendLog("ИИ: " + automation.LastLlmResponse);
+                    AppendLog("Применено: " + applied);
 
                     if (state.HasSubmit)
                     {
@@ -605,6 +606,7 @@ namespace YandexSolver
                             _settings,
                             "Предыдущий ответ был отмечен как неверный, перепроверь расчёт.",
                             _runCts.Token);
+                        AppendLog("ИИ (повтор): " + automation.LastLlmResponse);
                         AppendLog("Повторный ответ: " + retryApplied);
                         if (_settings.SubmitDelayMs > 0)
                         {

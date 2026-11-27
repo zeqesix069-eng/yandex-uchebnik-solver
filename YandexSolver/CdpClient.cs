@@ -192,6 +192,34 @@ namespace YandexSolver
             }
         }
 
+        public async Task DragAsync(int fromX, int fromY, int toX, int toY, CancellationToken ct)
+        {
+            await DispatchMouseAsync("mouseMoved", fromX, fromY, "none", 0, ct).ConfigureAwait(false);
+            await DispatchMouseAsync("mousePressed", fromX, fromY, "left", 1, ct).ConfigureAwait(false);
+            const int steps = 8;
+            for (int i = 1; i <= steps; i++)
+            {
+                int x = fromX + (toX - fromX) * i / steps;
+                int y = fromY + (toY - fromY) * i / steps;
+                await DispatchMouseAsync("mouseMoved", x, y, "left", 1, ct).ConfigureAwait(false);
+                await Task.Delay(25, ct).ConfigureAwait(false);
+            }
+            await DispatchMouseAsync("mouseReleased", toX, toY, "left", 1, ct).ConfigureAwait(false);
+        }
+
+        private Task DispatchMouseAsync(string type, int x, int y, string button, int clickCount, CancellationToken ct)
+        {
+            var p = new Dictionary<string, object>
+            {
+                { "type", type },
+                { "x", x },
+                { "y", y },
+                { "button", button },
+                { "clickCount", clickCount }
+            };
+            return SendCommandAsync("Input.dispatchMouseEvent", p, ct);
+        }
+
         public async Task<Dictionary<string, object>> SendCommandAsync(string method, Dictionary<string, object> parameters, CancellationToken ct)
         {
             if (!IsConnected)

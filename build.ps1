@@ -19,9 +19,11 @@ if (-not $gpp) {
 
 $dllPath = Join-Path $outDir "SolverCore.dll"
 & g++ -std=c++20 -O2 -shared -static (Join-Path $root "SolverCore\SolverCore.cpp") -lwinhttp -o $dllPath
+if ($LASTEXITCODE -ne 0) { throw "g++ build failed with code $LASTEXITCODE" }
 
 $msbuild = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe"
 & $msbuild (Join-Path $root "YandexSolver\YandexSolver.csproj") /p:Configuration=Release /p:Platform=x64 /nologo /v:minimal
+if ($LASTEXITCODE -ne 0) { throw "MSBuild failed with code $LASTEXITCODE" }
 
 Write-Host "Built: $dllPath"
 Write-Host "Built: $(Join-Path $outDir 'YandexSolver.exe')"

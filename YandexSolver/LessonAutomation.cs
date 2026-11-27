@@ -19,11 +19,23 @@ namespace YandexSolver
         public bool IsErrorBanner { get; set; }
         public int? TargetContextId { get; set; }
         public List<TaskControl> Controls { get; set; }
+        public List<DragNode> DragItems { get; set; }
+        public List<DragNode> DropTargets { get; set; }
 
         public PageTaskState()
         {
             Controls = new List<TaskControl>();
+            DragItems = new List<DragNode>();
+            DropTargets = new List<DragNode>();
         }
+    }
+
+    public sealed class DragNode
+    {
+        public int Index { get; set; }
+        public string Label { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
     }
 
     public sealed class TaskControl
@@ -39,6 +51,8 @@ namespace YandexSolver
     {
         private readonly CdpClient _cdp;
         private readonly JavaScriptSerializer _json = new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 };
+
+        public string LastLlmResponse { get; private set; }
 
         public LessonAutomation(CdpClient cdp)
         {
@@ -71,20 +85,38 @@ namespace YandexSolver
                 }
 
                 var controls = [];
-                var rawEls = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""]');
+                var cmEls = document.querySelectorAll('.CodeMirror');
+                for (var c = 0; c < cmEls.length; c++) {
+                    var cmNode = cmEls[c];
+                    if (!isVisible(cmNode) || !cmNode.CodeMirror) continue;
+                    controls.push({
+                        index: controls.length,
+                        kind: 'code',
+                        label: 'CodeMirror editor',
+                        value: cmNode.CodeMirror.getValue() || '',
+                        checked: false
+                    });
+                }
+
+                var rawEls = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""], [role=""combobox""], [aria-haspopup=""listbox""], button.Select2-Button');
                 for (var j = 0; j < rawEls.length; j++) {
                     var el = rawEls[j];
+                    if (el.closest('.CodeMirror')) continue;
                     if (!isVisible(el)) continue;
                     var tag = el.tagName.toLowerCase();
-                    var type = (el.getAttribute('type') || el.getAttribute('role') || tag).toLowerCase();
+                    var type = (el.getAttribute('type') || el.getAttribute('role') || (tag === 'button' ? 'dropdown' : tag)).toLowerCase();
                     if (type === 'hidden' || type === 'submit' || type === 'button') continue;
                     var labelEl = el.closest('label') || el.parentElement;
                     var label = clean(el.getAttribute('aria-label') || (labelEl ? labelEl.innerText : '') || el.placeholder || '');
+                    if (tag === 'select') {
+                        var opts = Array.prototype.slice.call(el.options).map(function(o) { return clean(o.text); }).filter(Boolean);
+                        label = (label + ' [options: ' + opts.join(' | ') + ']').trim();
+                    }
                     controls.push({
                         index: controls.length,
                         kind: type,
-                        label: label.slice(0, 300),
-                        value: el.value || '',
+                        label: label.slice(0, 350),
+                        value: el.value || clean(el.innerText) || '',
                         checked: !!(el.checked || el.getAttribute('aria-checked') === 'true')
                     });
                 }
@@ -97,7 +129,9 @@ namespace YandexSolver
                     hasFinish: hasFinish,
                     isCorrectBanner: bodyText.indexOf('Этот ответ правильный') >= 0 || bodyText.indexOf('Правильно') >= 0,
                     isErrorBanner: bodyText.indexOf('Попробуй ещё') >= 0 || bodyText.indexOf('Неправильно') >= 0 || bodyText.indexOf('Ошибка') >= 0,
-                    controls: controls
+                    controls: controls,
+                    dragItems: [],
+                    dropTargets: []
                 });
             })()";
 
@@ -172,6 +206,77 @@ namespace YandexSolver
                 }
             }
 
+            if (state.Controls.Count == 0 && state.HasSubmit)
+            {
+                const string dragScript = @"(function() {
+                    function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
+                    function isVisible(el) {
+                        if (!el) return false;
+                        var r = el.getBoundingClientRect();
+                        return r.width > 12 && r.height > 12;
+                    }
+                    var root = document.querySelector('.problem__block-list') || document.querySelector('main') || document.body;
+                    var dragItems = [];
+                    var dropTargets = [];
+                    var all = root.querySelectorAll('div, span, li');
+                    for (var i = 0; i < all.length; i++) {
+                        var el = all[i];
+                        if (!isVisible(el)) continue;
+                        var st = window.getComputedStyle(el);
+                        var r = el.getBoundingClientRect();
+                        var txt = clean(el.innerText);
+                        if ((el.getAttribute('draggable') === 'true' || st.cursor === 'grab' || st.cursor === '-webkit-grab') && txt && txt.length <= 120 && r.width < 450 && r.height < 120) {
+                            dragItems.push({ index: dragItems.length, label: txt, x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) });
+                        } else if ((el.getAttribute('data-droppable') || (el.className && String(el.className).toLowerCase().indexOf('drop') >= 0) || (el.className && String(el.className).toLowerCase().indexOf('bucket') >= 0) || (el.className && String(el.className).toLowerCase().indexOf('column') >= 0)) && r.height >= 40 && r.width >= 60) {
+                            dropTargets.push({ index: dropTargets.length, label: txt.slice(0, 80) || ('slot_' + dropTargets.length), x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) });
+                        }
+                    }
+                    return JSON.stringify({ dragItems: dragItems, dropTargets: dropTargets });
+                })()";
+
+                try
+                {
+                    object dragRaw = await _cdp.EvaluateAsync(dragScript, ct).ConfigureAwait(false);
+                    var dragDict = _json.Deserialize<Dictionary<string, object>>(Convert.ToString(dragRaw));
+                    if (dragDict != null)
+                    {
+                        if (dragDict.ContainsKey("dragItems") && dragDict["dragItems"] is ArrayList)
+                        {
+                            foreach (object item in (ArrayList)dragDict["dragItems"])
+                            {
+                                var d = item as Dictionary<string, object>;
+                                if (d == null) continue;
+                                state.DragItems.Add(new DragNode
+                                {
+                                    Index = Convert.ToInt32(d["index"]),
+                                    Label = GetString(d, "label"),
+                                    X = Convert.ToInt32(d["x"]),
+                                    Y = Convert.ToInt32(d["y"])
+                                });
+                            }
+                        }
+                        if (dragDict.ContainsKey("dropTargets") && dragDict["dropTargets"] is ArrayList)
+                        {
+                            foreach (object item in (ArrayList)dragDict["dropTargets"])
+                            {
+                                var d = item as Dictionary<string, object>;
+                                if (d == null) continue;
+                                state.DropTargets.Add(new DragNode
+                                {
+                                    Index = Convert.ToInt32(d["index"]),
+                                    Label = GetString(d, "label"),
+                                    X = Convert.ToInt32(d["x"]),
+                                    Y = Convert.ToInt32(d["y"])
+                                });
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
             return state;
         }
 
@@ -192,10 +297,34 @@ namespace YandexSolver
                     prompt,
                     settings.Temperature), ct).ConfigureAwait(false);
 
+            LastLlmResponse = llmRaw;
+
             var answerDict = _json.Deserialize<Dictionary<string, object>>(llmRaw);
             if (answerDict == null)
             {
                 throw new InvalidOperationException("Модель вернула некорректный JSON: " + llmRaw);
+            }
+
+            string ansType = GetString(answerDict, "type");
+            if (ansType == "drag" && answerDict.ContainsKey("moves") && answerDict["moves"] is ArrayList)
+            {
+                int moved = 0;
+                foreach (object mObj in (ArrayList)answerDict["moves"])
+                {
+                    var m = mObj as Dictionary<string, object>;
+                    if (m == null) continue;
+                    int srcIdx = Convert.ToInt32(m["itemIndex"]);
+                    int dstIdx = Convert.ToInt32(m["targetIndex"]);
+                    if (srcIdx >= 0 && srcIdx < state.DragItems.Count && dstIdx >= 0 && dstIdx < state.DropTargets.Count)
+                    {
+                        DragNode src = state.DragItems[srcIdx];
+                        DragNode dst = state.DropTargets[dstIdx];
+                        await _cdp.DragAsync(src.X, src.Y, dst.X, dst.Y, ct).ConfigureAwait(false);
+                        moved++;
+                        await Task.Delay(120, ct).ConfigureAwait(false);
+                    }
+                }
+                return "drag:" + moved;
             }
 
             string actionJson = _json.Serialize(answerDict);
@@ -205,7 +334,47 @@ namespace YandexSolver
                     var r = el.getBoundingClientRect();
                     return r.width > 0 && r.height > 0;
                 }
+                function setDropdownOrSelect(el, val) {
+                    var target = String(val || '').trim().toLowerCase();
+                    if (el.tagName.toLowerCase() === 'select') {
+                        for (var o = 0; o < el.options.length; o++) {
+                            if (el.options[o].text.trim().toLowerCase() === target || el.options[o].value.trim().toLowerCase() === target) {
+                                el.selectedIndex = o;
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                    el.click();
+                    var items = document.querySelectorAll('[role=""option""], .Select2-Item, .Menu-Item');
+                    for (var k = 0; k < items.length; k++) {
+                        var txt = (items[k].innerText || '').trim().toLowerCase();
+                        if (txt === target || txt.indexOf(target) >= 0) {
+                            items[k].click();
+                            return true;
+                        }
+                    }
+                    return false;
+                }
                 function setNativeValue(el, val) {
+                    if (el.tagName.toLowerCase() === 'select' || el.getAttribute('role') === 'combobox' || el.getAttribute('aria-haspopup') === 'listbox' || (el.className && String(el.className).indexOf('Select2-Button') >= 0)) {
+                        setDropdownOrSelect(el, val);
+                        return;
+                    }
+                    if (el && el.CodeMirror) {
+                        el.CodeMirror.setValue(val);
+                        return;
+                    }
+                    var cm = el.closest ? el.closest('.CodeMirror') : null;
+                    if (cm && cm.CodeMirror) {
+                        cm.CodeMirror.setValue(val);
+                        return;
+                    }
+                    if (window.ace && el.closest && el.closest('.ace_editor')) {
+                        window.ace.edit(el.closest('.ace_editor')).setValue(val, -1);
+                        return;
+                    }
                     var proto = el.tagName.toLowerCase() === 'textarea'
                         ? window.HTMLTextAreaElement.prototype
                         : window.HTMLInputElement.prototype;
@@ -216,9 +385,14 @@ namespace YandexSolver
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }
                 var els = [];
-                var raw = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""]');
+                var cmEls = document.querySelectorAll('.CodeMirror');
+                for (var c = 0; c < cmEls.length; c++) {
+                    if (isVisible(cmEls[c]) && cmEls[c].CodeMirror) els.push(cmEls[c]);
+                }
+                var raw = document.querySelectorAll('input, textarea, select, [role=""radio""], [role=""checkbox""], [role=""combobox""], [aria-haspopup=""listbox""], button.Select2-Button');
                 for (var i = 0; i < raw.length; i++) {
                     var el = raw[i];
+                    if (el.closest('.CodeMirror')) continue;
                     if (!isVisible(el)) continue;
                     var t = (el.getAttribute('type') || el.getAttribute('role') || el.tagName).toLowerCase();
                     if (t === 'hidden' || t === 'submit' || t === 'button') continue;
@@ -333,6 +507,21 @@ namespace YandexSolver
                     ctrl.Index, ctrl.Kind, ctrl.Label, ctrl.Value);
                 sb.AppendLine();
             }
+            if (state.DragItems.Count > 0)
+            {
+                sb.AppendLine("Перетаскиваемые карточки (dragItems):");
+                foreach (DragNode d in state.DragItems)
+                {
+                    sb.AppendFormat("- itemIndex={0}, text=\"{1}\"", d.Index, d.Label);
+                    sb.AppendLine();
+                }
+                sb.AppendLine("Целевые зоны (dropTargets):");
+                foreach (DragNode t in state.DropTargets)
+                {
+                    sb.AppendFormat("- targetIndex={0}, label=\"{1}\"", t.Index, t.Label);
+                    sb.AppendLine();
+                }
+            }
             if (!string.IsNullOrEmpty(retryNote))
             {
                 sb.AppendLine();
@@ -340,8 +529,9 @@ namespace YandexSolver
             }
             sb.AppendLine();
             sb.AppendLine("Верни строго JSON одного из форматов:");
-            sb.AppendLine("1) Для выбора вариантов (radio/checkbox): {\"type\":\"choice\",\"indices\":[0]}");
-            sb.AppendLine("2) Для ввода текста/чисел в поля по порядку: {\"type\":\"inputs\",\"values\":[\"ответ\"]}");
+            sb.AppendLine("1) Для выбора вариантов (radio/checkbox): {\"type\":\"choice\",\"indices\":[0]} (для checkbox укажи ВСЕ подходящие варианты)");
+            sb.AppendLine("2) Для ввода текста/чисел/кода/списков по порядку: {\"type\":\"inputs\",\"values\":[\"ответ\"]}");
+            sb.AppendLine("3) Для перетаскивания карточек в зоны: {\"type\":\"drag\",\"moves\":[{\"itemIndex\":0,\"targetIndex\":0}]}");
             return sb.ToString();
         }
 
