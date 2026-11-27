@@ -192,6 +192,21 @@ namespace YandexSolver
             }
         }
 
+        public async Task<string> CaptureScreenshotBase64Async(CancellationToken ct)
+        {
+            var p = new Dictionary<string, object>
+            {
+                { "format", "jpeg" },
+                { "quality", 75 }
+            };
+            Dictionary<string, object> res = await SendCommandAsync("Page.captureScreenshot", p, ct).ConfigureAwait(false);
+            if (res != null && res.ContainsKey("data") && res["data"] != null)
+            {
+                return Convert.ToString(res["data"]);
+            }
+            return string.Empty;
+        }
+
         public async Task DragAsync(int fromX, int fromY, int toX, int toY, CancellationToken ct)
         {
             await DispatchMouseAsync("mouseMoved", fromX, fromY, "none", 0, ct).ConfigureAwait(false);

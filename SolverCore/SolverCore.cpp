@@ -348,13 +348,14 @@ SOLVER_API int ys_http_get(const char* url, char* outBuf, int outBufSize) {
     return 0;
 }
 
-SOLVER_API int ys_solve_task_ex(
+SOLVER_API int ys_solve_task_vision(
     const char* provider,
     const char* baseUrl,
     const char* apiKey,
     const char* model,
     const char* systemPromptUtf8,
     const char* promptUtf8,
+    const char* imageBase64Utf8,
     double temperature,
     char* outBuf,
     int outBufSize) {
@@ -364,6 +365,7 @@ SOLVER_API int ys_solve_task_ex(
     std::string mdl = model ? model : "";
     std::string prompt = promptUtf8 ? promptUtf8 : "";
     std::string extraSys = systemPromptUtf8 ? systemPromptUtf8 : "";
+    std::string imgB64 = imageBase64Utf8 ? imageBase64Utf8 : "";
 
     if (mdl.empty() || prompt.empty()) {
         writeOutput("Model and prompt must not be empty.", outBuf, outBufSize);
@@ -378,7 +380,8 @@ SOLVER_API int ys_solve_task_ex(
     std::string tempStr(tempBuf);
 
     std::string endpoint;
-    std::string payload;
+    std::string textPayload;
+    std::string visionPayload;
     std::vector<std::wstring> headers;
     headers.push_back(L"Content-Type: application/json; charset=utf-8");
 
@@ -394,9 +397,16 @@ SOLVER_API int ys_solve_task_ex(
             base = "https://generativelanguage.googleapis.com/v1beta";
         }
         endpoint = base + "/models/" + mdl + ":generateContent?key=" + key;
-        payload = "{\"contents\":[{\"parts\":[{\"text\":\"" +
-                  escapeJsonString(sysPrompt + "\n\n" + prompt) +
-                  "\"}]}],\"generationConfig\":{\"temperature\":" + tempStr + "}}";
+        textPayload = "{\"contents\":[{\"parts\":[{\"text\":\"" +
+                      escapeJsonString(sysPrompt + "\n\n" + prompt) +
+                      "\"}]}],\"generationConfig\":{\"temperature\":" + tempStr + "}}";
+        if (!imgB64.empty()) {
+            visionPayload = "{\"contents\":[{\"parts\":[{\"text\":\"" +
+                            escapeJsonString(sysPrompt + "\n\n" + prompt) +
+                            "\"},{\"inlineData\":{\"mimeType\":\"image/jpeg\",\"data\":\"" +
+                            escapeJsonString(imgB64) +
+                            "\"}}]}],\"generationConfig\":{\"temperature\":" + tempStr + "}}";
+        }
     } else {
         if (base.empty()) {
             base = "https://api.openai.com/v1";
@@ -407,14 +417,27 @@ SOLVER_API int ys_solve_task_ex(
         }
         headers.push_back(L"HTTP-Referer: https://education.yandex.ru");
         headers.push_back(L"X-Title: YandexUchebnikSolver");
-        payload = "{\"model\":\"" + escapeJsonString(mdl) +
-                  "\",\"temperature\":" + tempStr +
-                  ",\"messages\":[{\"role\":\"system\",\"content\":\"" +
-                  escapeJsonString(sysPrompt) + "\"},{\"role\":\"user\",\"content\":\"" +
-                  escapeJsonString(prompt) + "\"}]}";
+        textPayload = "{\"model\":\"" + escapeJsonString(mdl) +
+                      "\",\"temperature\":" + tempStr +
+                      ",\"messages\":[{\"role\":\"system\",\"content\":\"" +
+                      escapeJsonString(sysPrompt) + "\"},{\"role\":\"user\",\"content\":\"" +
+                      escapeJsonString(prompt) + "\"}]}";
+        if (!imgB64.empty()) {
+            visionPayload = "{\"model\":\"" + escapeJsonString(mdl) +
+                            "\",\"temperature\":" + tempStr +
+                            ",\"messages\":[{\"role\":\"system\",\"content\":\"" +
+                            escapeJsonString(sysPrompt) +
+                            "\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"" +
+                            escapeJsonString(prompt) +
+                            "\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64," +
+                            escapeJsonString(imgB64) + "\"}}]}]}";
+        }
     }
 
-    HttpResponse resp = executeHttp("POST", endpoint, headers, payload);
+    HttpResponse resp = executeHttp("POST", endpoint, headers, imgB64.empty() ? textPayload : visionPayload);
+    if (!imgB64.empty() && resp.error.empty() && (resp.statusCode == 400 || resp.statusCode == 422)) {
+        resp = executeHttp("POST", endpoint, headers, textPayload);
+    }
     if (!resp.error.empty()) {
         writeOutput(resp.error, outBuf, outBufSize);
         return -1;
@@ -445,6 +468,19 @@ SOLVER_API int ys_solve_task_ex(
 
     writeOutput(stripMarkdownFences(content), outBuf, outBufSize);
     return 0;
+}
+
+SOLVER_API int ys_solve_task_ex(
+    const char* provider,
+    const char* baseUrl,
+    const char* apiKey,
+    const char* model,
+    const char* systemPromptUtf8,
+    const char* promptUtf8,
+    double temperature,
+    char* outBuf,
+    int outBufSize) {
+    return ys_solve_task_vision(provider, baseUrl, apiKey, model, systemPromptUtf8, promptUtf8, "", temperature, outBuf, outBufSize);
 }
 
 SOLVER_API int ys_solve_task(

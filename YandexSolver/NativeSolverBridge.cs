@@ -21,13 +21,14 @@ namespace YandexSolver
             int outBufSize);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int ys_solve_task_ex(
+        private static extern int ys_solve_task_vision(
             byte[] provider,
             byte[] baseUrl,
             byte[] apiKey,
             byte[] model,
             byte[] systemPromptUtf8,
             byte[] promptUtf8,
+            byte[] imageBase64Utf8,
             double temperature,
             byte[] outBuf,
             int outBufSize);
@@ -125,17 +126,19 @@ namespace YandexSolver
             string model,
             string systemPrompt,
             string prompt,
-            double temperature)
+            double temperature,
+            string imageBase64 = null)
         {
             string nativeProvider = providerUiName == "Google Gemini" ? "gemini" : "openai";
             byte[] outBuf = new byte[BufferSize];
-            int rc = ys_solve_task_ex(
+            int rc = ys_solve_task_vision(
                 ToUtf8Z(nativeProvider),
                 ToUtf8Z(baseUrl),
                 ToUtf8Z(apiKey),
                 ToUtf8Z(model),
                 ToUtf8Z(systemPrompt),
                 ToUtf8Z(prompt),
+                ToUtf8Z(imageBase64 ?? string.Empty),
                 temperature,
                 outBuf,
                 outBuf.Length);

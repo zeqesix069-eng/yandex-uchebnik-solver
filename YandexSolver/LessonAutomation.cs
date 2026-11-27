@@ -22,6 +22,8 @@ namespace YandexSolver
         public List<DragNode> DragItems { get; set; }
         public List<DragNode> DropTargets { get; set; }
         public bool IsReorderList { get; set; }
+        public bool HasVisuals { get; set; }
+        public string ScreenshotBase64 { get; set; }
 
         public PageTaskState()
         {
@@ -60,8 +62,64 @@ namespace YandexSolver
             _cdp = cdp;
         }
 
+        private async Task ExpandSpoilersAsync(CancellationToken ct)
+        {
+            const string expandScript = @"(function() {
+                function clean(s) { return (s || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+                function isVisible(el) {
+                    if (!el) return false;
+                    var r = el.getBoundingClientRect();
+                    return r.width > 0 && r.height > 0;
+                }
+                var root = document.querySelector('.problem__block-list') || document.querySelector('main') || document.body;
+                var clicked = 0;
+                var summaries = root.querySelectorAll('details:not([open]) > summary');
+                for (var i = 0; i < summaries.length && clicked < 8; i++) {
+                    if (isVisible(summaries[i])) { summaries[i].click(); clicked++; }
+                }
+                var ariaCollapsed = root.querySelectorAll('[aria-expanded=""false""]');
+                for (var j = 0; j < ariaCollapsed.length && clicked < 8; j++) {
+                    var el = ariaCollapsed[j];
+                    if (!isVisible(el)) continue;
+                    var hp = (el.getAttribute('aria-haspopup') || '').toLowerCase();
+                    var role = (el.getAttribute('role') || '').toLowerCase();
+                    var cls = String(el.className || '');
+                    if (hp || role === 'combobox' || /select|dropdown/i.test(cls)) continue;
+                    var txt = clean(el.innerText);
+                    if (!txt || txt === '?' || txt.length > 140) continue;
+                    el.click();
+                    clicked++;
+                }
+                var hints = root.querySelectorAll('button, [role=""button""]');
+                for (var k = 0; k < hints.length && clicked < 8; k++) {
+                    var b = hints[k];
+                    if (!isVisible(b) || b.disabled) continue;
+                    var t = clean(b.innerText);
+                    if (t === 'подсказка' || t === 'показать подсказку') {
+                        b.click();
+                        clicked++;
+                    }
+                }
+                return clicked;
+            })()";
+
+            try
+            {
+                object res = await _cdp.EvaluateAsync(expandScript, ct).ConfigureAwait(false);
+                if (res != null && Convert.ToInt32(res) > 0)
+                {
+                    await Task.Delay(180, ct).ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+            }
+        }
+
         public async Task<PageTaskState> ExtractStateAsync(CancellationToken ct)
         {
+            await ExpandSpoilersAsync(ct).ConfigureAwait(false);
+
             const string script = @"(function() {
                 function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
                 function isVisible(el) {
@@ -167,12 +225,20 @@ namespace YandexSolver
                     }
                 }
 
+                var hasVisuals = false;
+                var visEls = (blocks || main).querySelectorAll('img, svg, canvas, video, math');
+                for (var v = 0; v < visEls.length; v++) {
+                    var vr = visEls[v].getBoundingClientRect();
+                    if (vr.width > 28 && vr.height > 28) { hasVisuals = true; break; }
+                }
+
                 return JSON.stringify({
                     url: location.href,
                     questionText: qText.slice(0, 6000),
                     hasSubmit: hasSubmit,
                     hasNext: hasNext,
                     hasFinish: hasFinish,
+                    hasVisuals: hasVisuals,
                     isCorrectBanner: bodyText.indexOf('Этот ответ правильный') >= 0 || bodyText.indexOf('Правильно') >= 0,
                     isErrorBanner: bodyText.indexOf('Попробуй ещё') >= 0 || bodyText.indexOf('Неправильно') >= 0 || bodyText.indexOf('Ответ неверный') >= 0 || bodyText.indexOf('Ошибка') >= 0,
                     controls: controls,
@@ -192,6 +258,7 @@ namespace YandexSolver
                 HasSubmit = GetBool(dict, "hasSubmit"),
                 HasNext = GetBool(dict, "hasNext"),
                 HasFinish = GetBool(dict, "hasFinish"),
+                HasVisuals = GetBool(dict, "hasVisuals"),
                 IsCorrectBanner = GetBool(dict, "isCorrectBanner"),
                 IsErrorBanner = GetBool(dict, "isErrorBanner")
             };
@@ -452,6 +519,17 @@ namespace YandexSolver
                 }
             }
 
+            if (state.HasSubmit && (state.HasVisuals || state.DragItems.Count > 0 || state.Controls.Count == 0))
+            {
+                try
+                {
+                    state.ScreenshotBase64 = await _cdp.CaptureScreenshotBase64Async(ct).ConfigureAwait(false);
+                }
+                catch
+                {
+                }
+            }
+
             return state;
         }
 
@@ -470,7 +548,8 @@ namespace YandexSolver
                     settings.Model,
                     settings.CustomSystemPrompt,
                     prompt,
-                    settings.Temperature), ct).ConfigureAwait(false);
+                    settings.Temperature,
+                    state.ScreenshotBase64), ct).ConfigureAwait(false);
 
             LastLlmResponse = llmRaw;
 
