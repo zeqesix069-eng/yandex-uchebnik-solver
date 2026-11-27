@@ -83,7 +83,7 @@
                         <StackPanel Orientation="Horizontal">
                             <Ellipse x:Name="ConnectionDot" Width="7" Height="7" Fill="#71717A" VerticalAlignment="Center" Margin="0,0,6,0" />
                             <TextBlock x:Name="ConnectionPillText"
-                                       Text="Edge: не подключён"
+                                       Text="CDP: не подключён"
                                        Foreground="{DynamicResource TextMutedBrush}"
                                        FontSize="11.5"
                                        VerticalAlignment="Center" />

@@ -63,11 +63,11 @@ namespace YandexSolver
                 var hasSubmit = false, hasNext = false, hasFinish = false;
                 for (var i = 0; i < buttons.length; i++) {
                     var b = buttons[i];
-                    if (!isVisible(b) || b.disabled) continue;
+                    if (!isVisible(b)) continue;
                     var t = clean(b.innerText).toLowerCase();
                     if (t === 'ответить' || t === 'проверить') hasSubmit = true;
-                    else if (t === 'дальше' || t === 'далее' || t === 'продолжить') hasNext = true;
-                    else if (t.indexOf('завершить') >= 0) hasFinish = true;
+                    else if (!b.disabled && (t === 'дальше' || t === 'далее' || t === 'продолжить')) hasNext = true;
+                    else if (!b.disabled && t.indexOf('завершить') >= 0) hasFinish = true;
                 }
 
                 var controls = [];

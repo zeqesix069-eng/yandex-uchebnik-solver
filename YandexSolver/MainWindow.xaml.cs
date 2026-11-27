@@ -425,28 +425,44 @@ namespace YandexSolver
             return string.Empty;
         }
 
-        private async void ConnectCdp_Click(object sender, RoutedEventArgs e)
+        private async Task<bool> EnsureConnectedAsync()
         {
+            if (_cdp.IsConnected)
+            {
+                return true;
+            }
             ReadSettingsFromUi();
-            ConnectButton.IsEnabled = false;
-            SetStatus("Подключаюсь к Edge CDP...", LoadingDot);
             try
             {
                 string wsUrl = await Task.Run(() => CdpClient.FindTargetWebSocketUrl(_settings.CdpPort));
                 await _cdp.ConnectAsync(wsUrl, CancellationToken.None);
-                BrowserStatusLabel.Text = "Подключено к вкладке Edge (порт " + _settings.CdpPort + ")";
+                BrowserStatusLabel.Text = "Подключено к браузеру (порт " + _settings.CdpPort + ")";
                 ConnectionDot.Fill = SuccessDot;
-                ConnectionPillText.Text = "Edge: " + _settings.CdpPort;
-                SetStatus("Подключено к браузеру.", SuccessDot);
+                ConnectionPillText.Text = "CDP: " + _settings.CdpPort;
                 AppendLog("Подключено к CDP: " + wsUrl);
-                await RefreshPreviewInternalAsync();
+                return true;
             }
             catch (Exception exc)
             {
                 ConnectionDot.Fill = ErrorDot;
-                ConnectionPillText.Text = "Edge: ошибка";
+                ConnectionPillText.Text = "CDP: ошибка";
                 SetStatus("Ошибка подключения: " + exc.Message, ErrorDot);
                 AppendLog("Ошибка CDP: " + exc.Message);
+                return false;
+            }
+        }
+
+        private async void ConnectCdp_Click(object sender, RoutedEventArgs e)
+        {
+            ConnectButton.IsEnabled = false;
+            SetStatus("Подключаюсь к CDP...", LoadingDot);
+            try
+            {
+                if (await EnsureConnectedAsync())
+                {
+                    SetStatus("Подключено к браузеру.", SuccessDot);
+                    await RefreshPreviewInternalAsync();
+                }
             }
             finally
             {
@@ -513,9 +529,8 @@ namespace YandexSolver
 
         private async Task RunSolverAsync(bool loopMode)
         {
-            if (!_cdp.IsConnected)
+            if (!await EnsureConnectedAsync())
             {
-                SetStatus("Сначала подключитесь к Edge CDP.", ErrorDot);
                 return;
             }
 
