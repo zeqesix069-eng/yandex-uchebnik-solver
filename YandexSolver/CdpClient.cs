@@ -212,12 +212,14 @@ namespace YandexSolver
 
         private Task DispatchMouseAsync(string type, int x, int y, string button, int clickCount, CancellationToken ct)
         {
+            int buttons = (button == "left" && type != "mouseReleased") ? 1 : 0;
             var p = new Dictionary<string, object>
             {
                 { "type", type },
                 { "x", x },
                 { "y", y },
                 { "button", button },
+                { "buttons", buttons },
                 { "clickCount", clickCount }
             };
             return SendCommandAsync("Input.dispatchMouseEvent", p, ct);

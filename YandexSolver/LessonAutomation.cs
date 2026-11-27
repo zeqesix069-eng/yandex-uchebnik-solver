@@ -435,7 +435,7 @@ namespace YandexSolver
                         DragNode dst = state.DropTargets[dstIdx];
                         await _cdp.DragAsync(src.X, src.Y, dst.X, dst.Y, ct).ConfigureAwait(false);
                         moved++;
-                        await Task.Delay(120, ct).ConfigureAwait(false);
+                        await Task.Delay(220, ct).ConfigureAwait(false);
                     }
                 }
                 return "drag:" + moved;
