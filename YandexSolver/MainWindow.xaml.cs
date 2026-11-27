@@ -408,6 +408,11 @@ namespace YandexSolver
             LaunchBrowserWithCdp("Edge", FindEdgePath(), "EdgeProfile");
         }
 
+        private void LaunchYandex_Click(object sender, RoutedEventArgs e)
+        {
+            LaunchBrowserWithCdp("Яндекс Браузер", FindYandexPath(), "YandexProfile");
+        }
+
         private void LaunchBrowserWithCdp(string name, string exePath, string profileFolder)
         {
             ReadSettingsFromUi();
@@ -454,6 +459,24 @@ namespace YandexSolver
             {
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Microsoft\Edge\Application\msedge.exe"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft\Edge\Application\msedge.exe")
+            };
+            foreach (string path in candidates)
+            {
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+            return string.Empty;
+        }
+
+        private static string FindYandexPath()
+        {
+            string[] candidates =
+            {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Yandex\YandexBrowser\Application\browser.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Yandex\YandexBrowser\Application\browser.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Yandex\YandexBrowser\Application\browser.exe")
             };
             foreach (string path in candidates)
             {

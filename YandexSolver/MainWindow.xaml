@@ -118,6 +118,7 @@
                                     <WrapPanel Margin="0,14,0,0">
                                         <Button Content="Открыть Chrome" Style="{StaticResource SecondaryButtonStyle}" Click="LaunchChrome_Click" Margin="0,0,6,0" />
                                         <Button Content="Открыть Edge" Style="{StaticResource SecondaryButtonStyle}" Click="LaunchEdge_Click" Margin="0,0,12,0" />
+                                    <Button Content="Открыть Яндекс" Style="{StaticResource SecondaryButtonStyle}" Click="LaunchYandex_Click" Margin="0,0,12,0" />
                                         <Button x:Name="ConnectButton" Content="Подключить" Style="{StaticResource SecondaryButtonStyle}" FontWeight="SemiBold"
                                                 Foreground="{DynamicResource NavInkBrush}" Background="{DynamicResource NavSelectionBrush}" Click="ConnectCdp_Click" />
                                     </WrapPanel>
