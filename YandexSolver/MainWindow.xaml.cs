@@ -673,7 +673,13 @@ namespace YandexSolver
                         after = await automation.ExtractStateAsync(_runCts.Token);
                     }
 
-                    if (!after.IsErrorBanner && (after.IsCorrectBanner || after.HasNext || after.HasFinish))
+                    if (after.IsErrorBanner || after.HasRetry)
+                    {
+                        AppendLog("Ответ неверный (кнопка «Ещё раз»). Остановлено.");
+                        break;
+                    }
+
+                    if (after.IsCorrectBanner || after.HasNext || after.HasFinish)
                     {
                         AnswerCache.Save(taskHash, automation.LastLlmResponse, _settings);
                     }

@@ -207,6 +207,15 @@ namespace YandexSolver
             return string.Empty;
         }
 
+        public async Task ClickAtAsync(int x, int y, CancellationToken ct)
+        {
+            await DispatchMouseAsync("mouseMoved", x, y, "none", 0, ct).ConfigureAwait(false);
+            await Task.Delay(20, ct).ConfigureAwait(false);
+            await DispatchMouseAsync("mousePressed", x, y, "left", 1, ct).ConfigureAwait(false);
+            await Task.Delay(30, ct).ConfigureAwait(false);
+            await DispatchMouseAsync("mouseReleased", x, y, "left", 1, ct).ConfigureAwait(false);
+        }
+
         public async Task DragAsync(int fromX, int fromY, int toX, int toY, CancellationToken ct)
         {
             await DispatchMouseAsync("mouseMoved", fromX, fromY, "none", 0, ct).ConfigureAwait(false);

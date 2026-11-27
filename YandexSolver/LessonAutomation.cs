@@ -15,6 +15,7 @@ namespace YandexSolver
         public bool HasSubmit { get; set; }
         public bool HasNext { get; set; }
         public bool HasFinish { get; set; }
+        public bool HasRetry { get; set; }
         public bool IsCorrectBanner { get; set; }
         public bool IsErrorBanner { get; set; }
         public int? TargetContextId { get; set; }
@@ -133,7 +134,7 @@ namespace YandexSolver
                 var bodyText = clean(document.body ? document.body.innerText : '');
 
                 var buttons = Array.prototype.slice.call(document.querySelectorAll('button, a[role=""button""]'));
-                var hasSubmit = false, hasNext = false, hasFinish = false;
+                var hasSubmit = false, hasNext = false, hasFinish = false, hasRetry = false;
                 for (var i = 0; i < buttons.length; i++) {
                     var b = buttons[i];
                     if (!isVisible(b)) continue;
@@ -141,6 +142,7 @@ namespace YandexSolver
                     if (t === 'ответить' || t === 'проверить') hasSubmit = true;
                     else if (!b.disabled && (t === 'дальше' || t === 'далее' || t === 'продолжить')) hasNext = true;
                     else if (!b.disabled && t.indexOf('завершить') >= 0) hasFinish = true;
+                    else if (!b.disabled && (t === 'ещё раз' || t === 'еще раз')) hasRetry = true;
                 }
 
                 var controls = [];
@@ -197,14 +199,21 @@ namespace YandexSolver
 
                 if (controls.length === 0) {
                     var dropRoot = document.querySelector('.problem__block-list') || document.querySelector('main') || document.body;
-                    var cand = dropRoot.querySelectorAll('button, [role=""button""], [tabindex=""0""]');
+                    var cand = dropRoot.querySelectorAll('button, [role=""button""], [tabindex], div, span');
                     var ignoreBtns = ['ответить', 'проверить', 'дальше', 'далее', 'продолжить', 'завершить', 'ещё раз', 'еще раз', 'сбросить', 'закрыть', 'подсказка', 'продолжение', 'закрыть подсказку'];
                     for (var d = 0; d < cand.length; d++) {
                         var cel = cand[d];
                         if (!isVisible(cel) || cel.disabled) continue;
                         if (cel.closest('header, nav, footer')) continue;
+                        var ctag = cel.tagName.toLowerCase();
+                        var crole = (cel.getAttribute('role') || '').toLowerCase();
+                        if ((ctag === 'div' || ctag === 'span') && crole !== 'button' && !cel.hasAttribute('tabindex')) {
+                            var cst = window.getComputedStyle(cel);
+                            if (cst.cursor !== 'pointer' && !cel.querySelector('svg')) continue;
+                            if (cel.querySelector('button, input, select, textarea, [role=""button""], [tabindex]')) continue;
+                        }
                         var cr = cel.getBoundingClientRect();
-                        if (cr.width < 32 || cr.width > 320 || cr.height < 18 || cr.height > 64) continue;
+                        if (cr.width < 24 || cr.width > 340 || cr.height < 18 || cr.height > 64) continue;
                         var ctxt = clean(cel.innerText);
                         var clow = ctxt.toLowerCase();
                         if (!ctxt || ctxt.length > 45) continue;
@@ -238,9 +247,10 @@ namespace YandexSolver
                     hasSubmit: hasSubmit,
                     hasNext: hasNext,
                     hasFinish: hasFinish,
+                    hasRetry: hasRetry,
                     hasVisuals: hasVisuals,
                     isCorrectBanner: bodyText.indexOf('Этот ответ правильный') >= 0 || bodyText.indexOf('Правильно') >= 0,
-                    isErrorBanner: bodyText.indexOf('Попробуй ещё') >= 0 || bodyText.indexOf('Неправильно') >= 0 || bodyText.indexOf('Ответ неверный') >= 0 || bodyText.indexOf('Ошибка') >= 0,
+                    isErrorBanner: hasRetry || bodyText.indexOf('Попробуй ещё') >= 0 || bodyText.indexOf('Неправильно') >= 0 || bodyText.indexOf('Ответ неверный') >= 0 || bodyText.indexOf('Ошибка') >= 0,
                     controls: controls,
                     dragItems: [],
                     dropTargets: []
@@ -258,6 +268,7 @@ namespace YandexSolver
                 HasSubmit = GetBool(dict, "hasSubmit"),
                 HasNext = GetBool(dict, "hasNext"),
                 HasFinish = GetBool(dict, "hasFinish"),
+                HasRetry = GetBool(dict, "hasRetry"),
                 HasVisuals = GetBool(dict, "hasVisuals"),
                 IsCorrectBanner = GetBool(dict, "isCorrectBanner"),
                 IsErrorBanner = GetBool(dict, "isErrorBanner")
@@ -519,6 +530,130 @@ namespace YandexSolver
                 }
             }
 
+            if (state.DragItems.Count == 0 && state.HasSubmit &&
+                (state.Controls.Count == 0 || (state.Controls.Count >= 4 && state.Controls.Count % 2 == 0 && !state.Controls.Exists(c => c.Kind == "checkbox" || c.Kind == "text" || c.Kind == "number" || c.Kind == "textarea" || c.Kind == "code" || c.Kind == "select"))))
+            {
+                const string matchScript = @"(function() {
+                    function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
+                    function isVisible(el) {
+                        if (!el) return false;
+                        var r = el.getBoundingClientRect();
+                        return r.width > 0 && r.height > 0;
+                    }
+                    function getCardText(el) {
+                        var cur = el;
+                        for (var step = 0; step < 4 && cur; step++) {
+                            var t = clean(cur.innerText);
+                            if (t && t.length <= 120) return t;
+                            cur = cur.parentElement;
+                        }
+                        return '';
+                    }
+                    function splitColumns(nodes) {
+                        if (nodes.length < 4 || nodes.length % 2 !== 0) return null;
+                        var minX = 99999, maxX = -99999;
+                        for (var i = 0; i < nodes.length; i++) {
+                            if (nodes[i].x < minX) minX = nodes[i].x;
+                            if (nodes[i].x > maxX) maxX = nodes[i].x;
+                        }
+                        if (maxX - minX < 60) return null;
+                        var midX = (minX + maxX) / 2;
+                        var left = [], right = [];
+                        for (var j = 0; j < nodes.length; j++) {
+                            if (nodes[j].x < midX) left.push(nodes[j]);
+                            else right.push(nodes[j]);
+                        }
+                        if (left.length !== right.length || left.length < 2) return null;
+                        left.sort(function(a, b) { return a.y - b.y; });
+                        right.sort(function(a, b) { return a.y - b.y; });
+                        return { left: left, right: right };
+                    }
+                    var root = document.querySelector('.problem__block-list') || document.querySelector('main') || document.body;
+                    var pins = [];
+                    var all = root.querySelectorAll('div, span, button, [role=""button""]');
+                    for (var i = 0; i < all.length; i++) {
+                        var el = all[i];
+                        if (!isVisible(el)) continue;
+                        var r = el.getBoundingClientRect();
+                        if (r.width >= 10 && r.width <= 36 && r.height >= 10 && r.height <= 36) {
+                            var st = window.getComputedStyle(el);
+                            var cls = String(el.className || '').toLowerCase();
+                            var isCircle = (st.borderRadius && st.borderRadius.indexOf('50%') >= 0) || cls.indexOf('dot') >= 0 || cls.indexOf('pin') >= 0 || cls.indexOf('point') >= 0 || cls.indexOf('circle') >= 0 || cls.indexOf('connector') >= 0;
+                            if (isCircle || st.cursor === 'pointer' || st.cursor === 'grab') {
+                                var lbl = getCardText(el);
+                                if (lbl) {
+                                    pins.push({ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), label: lbl });
+                                }
+                            }
+                        }
+                    }
+                    var res = splitColumns(pins);
+                    if (res) return JSON.stringify(res);
+
+                    var cards = [];
+                    for (var k = 0; k < all.length; k++) {
+                        var cel = all[k];
+                        if (!isVisible(cel)) continue;
+                        var cr = cel.getBoundingClientRect();
+                        if (cr.width >= 60 && cr.width <= 360 && cr.height >= 24 && cr.height <= 90) {
+                            if (cel.querySelector('div, span, button') && clean(cel.innerText) === '') continue;
+                            var cst = window.getComputedStyle(cel);
+                            if (cst.cursor === 'pointer' || cst.cursor === 'grab' || cel.getAttribute('draggable') === 'true') {
+                                var ctxt = clean(cel.innerText);
+                                if (ctxt && ctxt.length <= 100) {
+                                    cards.push({ x: Math.round(cr.left + cr.width / 2), y: Math.round(cr.top + cr.height / 2), label: ctxt });
+                                }
+                            }
+                        }
+                    }
+                    res = splitColumns(cards);
+                    return res ? JSON.stringify(res) : '';
+                })()";
+
+                try
+                {
+                    object matchRaw = await _cdp.EvaluateAsync(matchScript, ct).ConfigureAwait(false);
+                    string matchJson = Convert.ToString(matchRaw);
+                    if (!string.IsNullOrEmpty(matchJson))
+                    {
+                        var matchDict = _json.Deserialize<Dictionary<string, object>>(matchJson);
+                        if (matchDict != null && matchDict.ContainsKey("left") && matchDict.ContainsKey("right"))
+                        {
+                            var leftArr = matchDict["left"] as ArrayList;
+                            var rightArr = matchDict["right"] as ArrayList;
+                            if (leftArr != null && rightArr != null && leftArr.Count == rightArr.Count && leftArr.Count >= 2)
+                            {
+                                state.Controls.Clear();
+                                state.IsReorderList = false;
+                                for (int i = 0; i < leftArr.Count; i++)
+                                {
+                                    var l = leftArr[i] as Dictionary<string, object>;
+                                    var r = rightArr[i] as Dictionary<string, object>;
+                                    if (l == null || r == null) continue;
+                                    state.DragItems.Add(new DragNode
+                                    {
+                                        Index = i,
+                                        Label = GetString(l, "label"),
+                                        X = Convert.ToInt32(l["x"]),
+                                        Y = Convert.ToInt32(l["y"])
+                                    });
+                                    state.DropTargets.Add(new DragNode
+                                    {
+                                        Index = i,
+                                        Label = GetString(r, "label"),
+                                        X = Convert.ToInt32(r["x"]),
+                                        Y = Convert.ToInt32(r["y"])
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
             if (state.HasSubmit && (state.HasVisuals || state.DragItems.Count > 0 || state.Controls.Count == 0))
             {
                 try
@@ -673,13 +808,20 @@ namespace YandexSolver
                             }
                             if (list.length === 0) {
                                 var dropRoot = document.querySelector('.problem__block-list') || document.querySelector('main') || document.body;
-                                var cand = dropRoot.querySelectorAll('button, [role=""button""], [tabindex=""0""]');
+                                var cand = dropRoot.querySelectorAll('button, [role=""button""], [tabindex], div, span');
                                 var ignoreBtns = ['ответить', 'проверить', 'дальше', 'далее', 'продолжить', 'завершить', 'ещё раз', 'еще раз', 'сбросить', 'закрыть', 'подсказка', 'продолжение', 'закрыть подсказку'];
                                 for (var d = 0; d < cand.length; d++) {
                                     var cel = cand[d];
                                     if (!isVisible(cel) || cel.disabled || cel.closest('header, nav, footer')) continue;
+                                    var ctag = cel.tagName.toLowerCase();
+                                    var crole = (cel.getAttribute('role') || '').toLowerCase();
+                                    if ((ctag === 'div' || ctag === 'span') && crole !== 'button' && !cel.hasAttribute('tabindex')) {
+                                        var cst = window.getComputedStyle(cel);
+                                        if (cst.cursor !== 'pointer' && !cel.querySelector('svg')) continue;
+                                        if (cel.querySelector('button, input, select, textarea, [role=""button""], [tabindex]')) continue;
+                                    }
                                     var cr = cel.getBoundingClientRect();
-                                    if (cr.width < 32 || cr.width > 320 || cr.height < 18 || cr.height > 64) continue;
+                                    if (cr.width < 24 || cr.width > 340 || cr.height < 18 || cr.height > 64) continue;
                                     var ctxt = clean(cel.innerText);
                                     var clow = ctxt.toLowerCase();
                                     if (!ctxt || ctxt.length > 45) continue;
@@ -692,15 +834,16 @@ namespace YandexSolver
                         }
                         var els = collect();
                         var el = els[idx];
-                        if (!el) return 'missing';
-                        if (el.tagName.toLowerCase() === 'select') return 'native-select';
+                        if (!el) return JSON.stringify({ status: 'missing' });
+                        if (el.tagName.toLowerCase() === 'select') return JSON.stringify({ status: 'native-select' });
                         el.scrollIntoView({ block: 'center' });
-                        el.click();
-                        return 'opened';
+                        var rr = el.getBoundingClientRect();
+                        return JSON.stringify({ status: 'opened', x: Math.round(rr.left + rr.width / 2), y: Math.round(rr.top + rr.height / 2) });
                     })(" + m + ")";
 
-                    object trigRes = await _cdp.EvaluateAsync(clickTriggerJs, state.TargetContextId, ct).ConfigureAwait(false);
-                    string trigStatus = Convert.ToString(trigRes);
+                    object trigRaw = await _cdp.EvaluateAsync(clickTriggerJs, state.TargetContextId, ct).ConfigureAwait(false);
+                    var trigDict = _json.Deserialize<Dictionary<string, object>>(Convert.ToString(trigRaw));
+                    string trigStatus = GetString(trigDict, "status");
                     if (trigStatus == "native-select")
                     {
                         string selectJs = @"(function(idx, val) {
@@ -725,7 +868,10 @@ namespace YandexSolver
 
                     if (trigStatus == "opened")
                     {
-                        await Task.Delay(90, ct).ConfigureAwait(false);
+                        int tx = Convert.ToInt32(trigDict["x"]);
+                        int ty = Convert.ToInt32(trigDict["y"]);
+                        await _cdp.ClickAtAsync(tx, ty, ct).ConfigureAwait(false);
+                        await Task.Delay(120, ct).ConfigureAwait(false);
                         string pickJs = @"(function(val) {
                             function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
                             function isVisible(el) { if (!el) return false; var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
@@ -740,15 +886,30 @@ namespace YandexSolver
                                 if (r.height > 64 || r.width > 380) continue;
                                 var txt = clean(it.innerText).toLowerCase();
                                 if (!txt) continue;
-                                if (txt === target) { it.click(); return true; }
-                                if (!partial && txt.indexOf(target) >= 0 && txt.length <= target.length + 20) partial = it;
+                                if (txt === target) {
+                                    it.scrollIntoView({ block: 'nearest' });
+                                    var rr = it.getBoundingClientRect();
+                                    return JSON.stringify({ found: true, x: Math.round(rr.left + rr.width / 2), y: Math.round(rr.top + rr.height / 2) });
+                                }
+                                if (!partial && target.length >= 2 && txt.indexOf(target) >= 0 && txt.length <= target.length + 20) partial = it;
                             }
-                            if (partial) { partial.click(); return true; }
-                            return false;
+                            if (partial) {
+                                partial.scrollIntoView({ block: 'nearest' });
+                                var pr = partial.getBoundingClientRect();
+                                return JSON.stringify({ found: true, x: Math.round(pr.left + pr.width / 2), y: Math.round(pr.top + pr.height / 2) });
+                            }
+                            return JSON.stringify({ found: false });
                         })(" + _json.Serialize(targetVal) + ")";
-                        object picked = await _cdp.EvaluateAsync(pickJs, state.TargetContextId, ct).ConfigureAwait(false);
-                        if (picked is bool && (bool)picked) appliedDrops++;
-                        await Task.Delay(60, ct).ConfigureAwait(false);
+                        object pickRaw = await _cdp.EvaluateAsync(pickJs, state.TargetContextId, ct).ConfigureAwait(false);
+                        var pickDict = _json.Deserialize<Dictionary<string, object>>(Convert.ToString(pickRaw));
+                        if (pickDict != null && GetBool(pickDict, "found"))
+                        {
+                            int ox = Convert.ToInt32(pickDict["x"]);
+                            int oy = Convert.ToInt32(pickDict["y"]);
+                            await _cdp.ClickAtAsync(ox, oy, ct).ConfigureAwait(false);
+                            appliedDrops++;
+                        }
+                        await Task.Delay(70, ct).ConfigureAwait(false);
                     }
                 }
                 return "inputs:" + appliedDrops;
