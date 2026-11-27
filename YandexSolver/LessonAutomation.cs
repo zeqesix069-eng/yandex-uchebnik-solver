@@ -868,7 +868,8 @@ namespace YandexSolver
                             }
                             return list;
                         }
-                        var els = collect();
+                        if (idx === 0 || !window.__ysDrops) { window.__ysDrops = collect(); }
+                        var els = window.__ysDrops;
                         var el = els[idx];
                         if (!el) return JSON.stringify({ status: 'missing' });
                         if (el.tagName.toLowerCase() === 'select') return JSON.stringify({ status: 'native-select' });
@@ -907,32 +908,47 @@ namespace YandexSolver
                         int tx = Convert.ToInt32(trigDict["x"]);
                         int ty = Convert.ToInt32(trigDict["y"]);
                         await _cdp.ClickAtAsync(tx, ty, ct).ConfigureAwait(false);
-                        await Task.Delay(120, ct).ConfigureAwait(false);
+                        await Task.Delay(140, ct).ConfigureAwait(false);
                         string pickJs = @"(function(val) {
                             function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
                             function isVisible(el) { if (!el) return false; var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
+                            function isTrigger(el) {
+                                if (!window.__ysDrops) return false;
+                                for (var i = 0; i < window.__ysDrops.length; i++) {
+                                    if (window.__ysDrops[i] === el || window.__ysDrops[i].contains(el)) return true;
+                                }
+                                return false;
+                            }
                             var target = String(val || '').trim().toLowerCase();
-                            var selectors = '[role=""option""], [role=""menuitem""], .Select2-Item, .Menu-Item, [role=""listbox""] > *, [role=""menu""] > *, ul > li, [class*=""option"" i], [class*=""item"" i], [class*=""menu"" i] div, [class*=""dropdown"" i] div';
-                            var items = document.querySelectorAll(selectors);
+                            var items = document.querySelectorAll('[role=""option""], [role=""menuitem""], .Select2-Item, .Menu-Item, [role=""listbox""] *, [role=""menu""] *, ul li, button, div, span, a');
+                            var exactPopup = null;
+                            var exactAny = null;
                             var partial = null;
                             for (var k = 0; k < items.length; k++) {
                                 var it = items[k];
-                                if (!isVisible(it)) continue;
+                                if (!isVisible(it) || isTrigger(it)) continue;
                                 var r = it.getBoundingClientRect();
-                                if (r.height > 64 || r.width > 380) continue;
+                                if (r.height < 16 || r.height > 64 || r.width < 20 || r.width > 380) continue;
                                 var txt = clean(it.innerText).toLowerCase();
                                 if (!txt) continue;
-                                if (txt === target) {
-                                    it.scrollIntoView({ block: 'nearest' });
-                                    var rr = it.getBoundingClientRect();
-                                    return JSON.stringify({ found: true, x: Math.round(rr.left + rr.width / 2), y: Math.round(rr.top + rr.height / 2) });
+                                var hasMatchingChild = false;
+                                for (var c = 0; c < it.children.length; c++) {
+                                    if (clean(it.children[c].innerText).toLowerCase() === txt) { hasMatchingChild = true; break; }
                                 }
-                                if (!partial && target.length >= 2 && txt.indexOf(target) >= 0 && txt.length <= target.length + 20) partial = it;
+                                if (hasMatchingChild) continue;
+                                if (txt === target) {
+                                    var inPopup = !!(it.closest('[role=""listbox""], [role=""menu""], [class*=""popup"" i], [class*=""menu"" i], [class*=""dropdown"" i], [class*=""list"" i]'));
+                                    if (inPopup) exactPopup = it;
+                                    exactAny = it;
+                                } else if (!partial && target.length >= 2 && txt.indexOf(target) >= 0 && txt.length <= target.length + 20) {
+                                    partial = it;
+                                }
                             }
-                            if (partial) {
-                                partial.scrollIntoView({ block: 'nearest' });
-                                var pr = partial.getBoundingClientRect();
-                                return JSON.stringify({ found: true, x: Math.round(pr.left + pr.width / 2), y: Math.round(pr.top + pr.height / 2) });
+                            var chosen = exactPopup || exactAny || partial;
+                            if (chosen) {
+                                chosen.scrollIntoView({ block: 'nearest' });
+                                var rr = chosen.getBoundingClientRect();
+                                return JSON.stringify({ found: true, x: Math.round(rr.left + rr.width / 2), y: Math.round(rr.top + rr.height / 2) });
                             }
                             return JSON.stringify({ found: false });
                         })(" + _json.Serialize(targetVal) + ")";
@@ -945,7 +961,11 @@ namespace YandexSolver
                             await _cdp.ClickAtAsync(ox, oy, ct).ConfigureAwait(false);
                             appliedDrops++;
                         }
-                        await Task.Delay(70, ct).ConfigureAwait(false);
+                        else
+                        {
+                            await _cdp.ClickAtAsync(tx, ty, ct).ConfigureAwait(false);
+                        }
+                        await Task.Delay(80, ct).ConfigureAwait(false);
                     }
                 }
                 return "inputs:" + appliedDrops;
