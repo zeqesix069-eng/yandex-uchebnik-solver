@@ -258,7 +258,7 @@ HttpResponse executeHttp(
         return result;
     }
 
-    WinHttpSetTimeouts(hSession, 10000, 15000, 30000, 60000);
+    WinHttpSetTimeouts(hSession, 15000, 30000, 60000, 180000);
 
     HINTERNET hConnect = WinHttpConnect(hSession, hostBuf, uc.nPort, 0);
     if (!hConnect) {
@@ -435,7 +435,7 @@ SOLVER_API int ys_solve_task_vision(
     }
 
     HttpResponse resp = executeHttp("POST", endpoint, headers, imgB64.empty() ? textPayload : visionPayload);
-    if (!imgB64.empty() && resp.error.empty() && (resp.statusCode == 400 || resp.statusCode == 422)) {
+    if (!imgB64.empty() && (!resp.error.empty() || resp.statusCode == 400 || resp.statusCode == 422)) {
         resp = executeHttp("POST", endpoint, headers, textPayload);
     }
     if (!resp.error.empty()) {
