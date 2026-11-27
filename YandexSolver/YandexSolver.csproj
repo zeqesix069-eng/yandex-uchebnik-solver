@@ -48,6 +48,7 @@
     <Compile Include="CertificateResolver.cs" />
     <Compile Include="InformaticsTools.cs" />
     <Compile Include="LessonAutomation.cs" />
+    <Compile Include="OcrHelper.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

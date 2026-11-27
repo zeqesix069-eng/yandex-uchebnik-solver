@@ -219,6 +219,109 @@ namespace YandexSolver
 
             if (state.Controls.Count == 0 && state.HasSubmit)
             {
+                const string dragImageScript = @"(function() {
+                    function toPng2x(img, sx, sy, sw, sh) {
+                        var c = document.createElement('canvas');
+                        c.width = Math.max(20, Math.round(sw * 2));
+                        c.height = Math.max(20, Math.round(sh * 2));
+                        var ctx = c.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, c.width, c.height);
+                        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+                        return c.toDataURL('image/png');
+                    }
+                    var container = document.querySelector('.marker-dragimage');
+                    if (!container) return JSON.stringify({ hasDragImage: false });
+
+                    var choices = container.querySelectorAll('img.marker-dragimage__choice');
+                    var fields = container.querySelectorAll('.marker-dragimage__field');
+                    var bg = container.querySelector('img.marker-dragimage__background');
+
+                    var items = [];
+                    for (var i = 0; i < choices.length; i++) {
+                        var im = choices[i];
+                        var r = im.getBoundingClientRect();
+                        if (r.width <= 0 || r.height <= 0) continue;
+                        var b64 = '';
+                        try { b64 = toPng2x(im, 0, 0, im.naturalWidth || r.width, im.naturalHeight || r.height); } catch (e) {}
+                        items.push({ index: items.length, x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), img: b64 });
+                    }
+
+                    var targets = [];
+                    var bgRect = bg ? bg.getBoundingClientRect() : null;
+                    var scaleX = (bg && bgRect && bgRect.width > 0) ? (bg.naturalWidth / bgRect.width) : 1;
+                    var scaleY = (bg && bgRect && bgRect.height > 0) ? (bg.naturalHeight / bgRect.height) : 1;
+
+                    for (var j = 0; j < fields.length; j++) {
+                        var f = fields[j];
+                        var fr = f.getBoundingClientRect();
+                        var cx = Math.round(fr.left + fr.width / 2);
+                        var cy = Math.round(fr.top + fr.height / 2);
+                        var cropB64 = '';
+                        if (bg && bgRect && bgRect.width > 0) {
+                            try {
+                                var relX = (cx - bgRect.left) * scaleX;
+                                var relY = (cy - bgRect.top) * scaleY;
+                                var sx = Math.max(0, relX - 180 * scaleX);
+                                var sy = Math.max(0, relY - 35 * scaleY);
+                                var sw = Math.min((bg.naturalWidth || bgRect.width) - sx, 300 * scaleX);
+                                var sh = Math.min((bg.naturalHeight || bgRect.height) - sy, 70 * scaleY);
+                                if (sw > 10 && sh > 10) cropB64 = toPng2x(bg, sx, sy, sw, sh);
+                            } catch (e) {}
+                        }
+                        targets.push({ index: targets.length, x: cx, y: cy, img: cropB64 });
+                    }
+
+                    return JSON.stringify({ hasDragImage: true, items: items, targets: targets });
+                })()";
+
+                try
+                {
+                    object diRaw = await _cdp.EvaluateAsync(dragImageScript, ct).ConfigureAwait(false);
+                    var diDict = _json.Deserialize<Dictionary<string, object>>(Convert.ToString(diRaw));
+                    if (diDict != null && GetBool(diDict, "hasDragImage"))
+                    {
+                        if (diDict.ContainsKey("items") && diDict["items"] is ArrayList)
+                        {
+                            foreach (object obj in (ArrayList)diDict["items"])
+                            {
+                                var d = obj as Dictionary<string, object>;
+                                if (d == null) continue;
+                                string ocr = await OcrHelper.RecognizePngBase64Async(GetString(d, "img")).ConfigureAwait(false);
+                                state.DragItems.Add(new DragNode
+                                {
+                                    Index = Convert.ToInt32(d["index"]),
+                                    Label = string.IsNullOrEmpty(ocr) ? ("item_" + d["index"]) : ocr,
+                                    X = Convert.ToInt32(d["x"]),
+                                    Y = Convert.ToInt32(d["y"])
+                                });
+                            }
+                        }
+                        if (diDict.ContainsKey("targets") && diDict["targets"] is ArrayList)
+                        {
+                            foreach (object obj in (ArrayList)diDict["targets"])
+                            {
+                                var d = obj as Dictionary<string, object>;
+                                if (d == null) continue;
+                                string ocr = await OcrHelper.RecognizePngBase64Async(GetString(d, "img")).ConfigureAwait(false);
+                                state.DropTargets.Add(new DragNode
+                                {
+                                    Index = Convert.ToInt32(d["index"]),
+                                    Label = string.IsNullOrEmpty(ocr) ? ("slot_" + d["index"]) : ("slot_" + d["index"] + " (" + ocr + ")"),
+                                    X = Convert.ToInt32(d["x"]),
+                                    Y = Convert.ToInt32(d["y"])
+                                });
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            if (state.Controls.Count == 0 && state.HasSubmit && state.DragItems.Count == 0)
+            {
                 const string dragScript = @"(function() {
                     function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
                     function isVisible(el) {
