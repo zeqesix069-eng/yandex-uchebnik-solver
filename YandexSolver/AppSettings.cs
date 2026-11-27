@@ -25,6 +25,10 @@ namespace YandexSolver
         public string Accent { get; set; }
         public string CornerStyle { get; set; }
         public double WindowOpacity { get; set; }
+        public bool PortableMode { get; set; }
+        public bool BossHotkeyEnabled { get; set; }
+        public string SchoolCode { get; set; }
+        public string StudentLogin { get; set; }
 
         public AppSettings()
         {
@@ -45,20 +49,51 @@ namespace YandexSolver
             Accent = "Синий";
             CornerStyle = "Стандарт";
             WindowOpacity = 1.0;
+            PortableMode = false;
+            BossHotkeyEnabled = true;
+            SchoolCode = string.Empty;
+            StudentLogin = string.Empty;
         }
 
-        private static string GetSettingsPath()
+        public static string GetPortableSettingsPath()
         {
-            string dir = Path.Combine(
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.ini");
+        }
+
+        public static string GetLocalSettingsPath()
+        {
+            return Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "YandexUchebnikSolver");
-            return Path.Combine(dir, "settings.ini");
+                "YandexUchebnikSolver",
+                "settings.ini");
+        }
+
+        public string GetActiveProfileDir(string folderName)
+        {
+            if (PortableMode)
+            {
+                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Profiles", folderName);
+            }
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "YandexUchebnikSolver",
+                folderName);
+        }
+
+        private static string ResolveLoadPath()
+        {
+            string portable = GetPortableSettingsPath();
+            if (File.Exists(portable))
+            {
+                return portable;
+            }
+            return GetLocalSettingsPath();
         }
 
         public static AppSettings Load()
         {
             var settings = new AppSettings();
-            string path = GetSettingsPath();
+            string path = ResolveLoadPath();
             if (!File.Exists(path))
             {
                 return settings;
@@ -140,6 +175,20 @@ namespace YandexSolver
                         if (double.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out dblVal))
                             settings.WindowOpacity = Math.Max(0.75, Math.Min(1.0, dblVal));
                         break;
+                    case "portable_mode":
+                        if (bool.TryParse(val, out boolVal))
+                            settings.PortableMode = boolVal;
+                        break;
+                    case "boss_hotkey":
+                        if (bool.TryParse(val, out boolVal))
+                            settings.BossHotkeyEnabled = boolVal;
+                        break;
+                    case "school_code":
+                        settings.SchoolCode = val;
+                        break;
+                    case "student_login":
+                        settings.StudentLogin = val;
+                        break;
                 }
             }
 
@@ -148,7 +197,7 @@ namespace YandexSolver
 
         public void Save()
         {
-            string path = GetSettingsPath();
+            string path = PortableMode ? GetPortableSettingsPath() : GetLocalSettingsPath();
             string dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             {
@@ -173,6 +222,10 @@ namespace YandexSolver
             sb.AppendLine("accent=" + (Accent ?? "Синий"));
             sb.AppendLine("corner_style=" + (CornerStyle ?? "Стандарт"));
             sb.AppendLine("window_opacity=" + WindowOpacity.ToString("0.00", CultureInfo.InvariantCulture));
+            sb.AppendLine("portable_mode=" + PortableMode);
+            sb.AppendLine("boss_hotkey=" + BossHotkeyEnabled);
+            sb.AppendLine("school_code=" + (SchoolCode ?? string.Empty));
+            sb.AppendLine("student_login=" + (StudentLogin ?? string.Empty));
             File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
         }
 
@@ -180,6 +233,10 @@ namespace YandexSolver
         {
             switch (provider)
             {
+                case "Pollinations.ai":
+                    return new KeyValuePair<string, string>(
+                        "https://gen.pollinations.ai/v1",
+                        "openai/gpt-5.4-nano");
                 case "Google Gemini":
                     return new KeyValuePair<string, string>(
                         "https://generativelanguage.googleapis.com/v1beta",

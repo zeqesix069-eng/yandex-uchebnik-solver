@@ -3,17 +3,32 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace YandexSolver
 {
     public partial class MainWindow : Window
     {
+        private const int HotkeyId = 9001;
+        private const uint ModControl = 0x0002;
+        private const uint ModShift = 0x0004;
+        private const uint VkH = 0x48;
+        private const int WmHotkey = 0x0312;
+
+        [DllImport("user32.dll")]
+        private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+        [DllImport("user32.dll")]
+        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+        private HwndSource _hwndSource;
         private static readonly Brush NeutralDot = CreateBrush("#71717A");
         private static readonly Brush LoadingDot = CreateBrush("#F59E0B");
         private static readonly Brush SuccessDot = CreateBrush("#22C55E");
@@ -28,7 +43,51 @@ namespace YandexSolver
         public MainWindow()
         {
             InitializeComponent();
+            SourceInitialized += MainWindow_SourceInitialized;
             ApplySettingsToUi(AppSettings.Load());
+        }
+
+        private void MainWindow_SourceInitialized(object sender, EventArgs e)
+        {
+            IntPtr handle = new WindowInteropHelper(this).Handle;
+            _hwndSource = HwndSource.FromHwnd(handle);
+            if (_hwndSource != null)
+            {
+                _hwndSource.AddHook(WndProc);
+                UpdateBossHotkey();
+            }
+        }
+
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == WmHotkey && wParam.ToInt32() == HotkeyId)
+            {
+                if (IsVisible)
+                {
+                    Hide();
+                }
+                else
+                {
+                    Show();
+                    Activate();
+                }
+                handled = true;
+            }
+            return IntPtr.Zero;
+        }
+
+        private void UpdateBossHotkey()
+        {
+            if (_hwndSource == null)
+            {
+                return;
+            }
+            IntPtr handle = _hwndSource.Handle;
+            UnregisterHotKey(handle, HotkeyId);
+            if (_settings != null && _settings.BossHotkeyEnabled)
+            {
+                RegisterHotKey(handle, HotkeyId, ModControl | ModShift, VkH);
+            }
         }
 
         private static Brush CreateBrush(string hex)
@@ -87,8 +146,13 @@ namespace YandexSolver
             AutoAdvanceCheck.IsChecked = _settings.AutoAdvance;
             SkipTheoryCheck.IsChecked = _settings.SkipTheory;
             RetryOnWrongCheck.IsChecked = _settings.RetryOnWrong;
+            PortableModeCheck.IsChecked = _settings.PortableMode;
+            BossHotkeyCheck.IsChecked = _settings.BossHotkeyEnabled;
+            SchoolCodeBox.Text = _settings.SchoolCode;
+            StudentLoginBox.Text = _settings.StudentLogin;
 
             ThemeManager.Apply(this, _settings.Theme, _settings.Accent, _settings.CornerStyle, _settings.WindowOpacity);
+            UpdateBossHotkey();
         }
 
         private void ReadSettingsFromUi()
@@ -112,6 +176,10 @@ namespace YandexSolver
             _settings.AutoAdvance = AutoAdvanceCheck.IsChecked == true;
             _settings.SkipTheory = SkipTheoryCheck.IsChecked == true;
             _settings.RetryOnWrong = RetryOnWrongCheck.IsChecked == true;
+            _settings.PortableMode = PortableModeCheck.IsChecked == true;
+            _settings.BossHotkeyEnabled = BossHotkeyCheck.IsChecked == true;
+            _settings.SchoolCode = SchoolCodeBox.Text.Trim();
+            _settings.StudentLogin = StudentLoginBox.Text.Trim();
         }
 
         private static int ParseClampedInt(string text, int fallback, int min, int max)
@@ -145,18 +213,23 @@ namespace YandexSolver
             {
                 _runCts.Cancel();
             }
+            if (_hwndSource != null)
+            {
+                UnregisterHotKey(_hwndSource.Handle, HotkeyId);
+            }
             _cdp.Dispose();
             Close();
         }
 
         private void NavTab_Changed(object sender, RoutedEventArgs e)
         {
-            if (WorkPanel == null || DatalessonPanel == null || SettingsPanel == null)
+            if (WorkPanel == null || DatalessonPanel == null || InformaticsPanel == null || SettingsPanel == null)
             {
                 return;
             }
             WorkPanel.Visibility = WorkTabRadio.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             DatalessonPanel.Visibility = DatalessonTabRadio.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            InformaticsPanel.Visibility = InformaticsTabRadio.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             SettingsPanel.Visibility = SettingsTabRadio.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -304,10 +377,7 @@ namespace YandexSolver
                 return;
             }
 
-            string profileDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "YandexUchebnikSolver",
-                profileFolder);
+            string profileDir = _settings.GetActiveProfileDir(profileFolder);
             Directory.CreateDirectory(profileDir);
 
             string args = string.Format(
@@ -693,6 +763,115 @@ namespace YandexSolver
                 return;
             }
             Process.Start(new ProcessStartInfo(DlResultBox.Text) { UseShellExecute = true });
+        }
+
+        private async void AutoLogin_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_cdp.IsConnected)
+            {
+                SetStatus("Сначала подключитесь к Chrome/Edge.", ErrorDot);
+                return;
+            }
+            ReadSettingsFromUi();
+            if (string.IsNullOrEmpty(_settings.SchoolCode) && string.IsNullOrEmpty(_settings.StudentLogin))
+            {
+                SetStatus("Укажите код школы и логин во вкладке «Настройки».", ErrorDot);
+                return;
+            }
+            try
+            {
+                var automation = new LessonAutomation(_cdp);
+                bool ok = await automation.FillYandexKidsLoginAsync(_settings.SchoolCode, _settings.StudentLogin, CancellationToken.None);
+                if (ok)
+                {
+                    SetStatus("Данные для входа подставлены.", SuccessDot);
+                    AppendLog("Автовход: поля заполнены.");
+                }
+                else
+                {
+                    SetStatus("Поля входа на текущей странице не найдены.", ErrorDot);
+                }
+            }
+            catch (Exception exc)
+            {
+                SetStatus("Ошибка автовхода: " + exc.Message, ErrorDot);
+            }
+        }
+
+        private void ConvertBase_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string selected = GetSelectedComboText(BaseFromCombo, "10 (DEC)");
+                int fromBase = 10;
+                if (selected.StartsWith("2 ")) fromBase = 2;
+                else if (selected.StartsWith("8 ")) fromBase = 8;
+                else if (selected.StartsWith("16 ")) fromBase = 16;
+
+                BaseOutputBox.Text = InformaticsTools.ConvertNumberBases(BaseInputBox.Text, fromBase);
+            }
+            catch (Exception exc)
+            {
+                BaseOutputBox.Text = "Ошибка: " + exc.Message;
+            }
+        }
+
+        private void CalcInfoSize_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                double v1 = double.Parse(InfoArg1Box.Text.Trim().Replace(',', '.'), CultureInfo.InvariantCulture);
+                double v2 = double.Parse(InfoArg2Box.Text.Trim().Replace(',', '.'), CultureInfo.InvariantCulture);
+                double v3 = double.Parse(InfoArg3Box.Text.Trim().Replace(',', '.'), CultureInfo.InvariantCulture);
+                double bits = v3 > 0 ? v1 * v2 * v3 : v1 * v2;
+                InfoOutputBox.Text = InformaticsTools.FormatBitsSummary(bits);
+            }
+            catch (Exception exc)
+            {
+                InfoOutputBox.Text = "Ошибка: " + exc.Message;
+            }
+        }
+
+        private void BuildTruthTable_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TruthOutputBox.Text = InformaticsTools.BuildTruthTable(TruthExprBox.Text);
+            }
+            catch (Exception exc)
+            {
+                TruthOutputBox.Text = "Ошибка: " + exc.Message;
+            }
+        }
+
+        private void CleanTraces_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string appDataDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "YandexUchebnikSolver");
+                if (Directory.Exists(appDataDir))
+                {
+                    Directory.Delete(appDataDir, true);
+                }
+                string portableProfiles = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Profiles");
+                if (Directory.Exists(portableProfiles))
+                {
+                    Directory.Delete(portableProfiles, true);
+                }
+                string portableIni = AppSettings.GetPortableSettingsPath();
+                if (File.Exists(portableIni))
+                {
+                    File.Delete(portableIni);
+                }
+                SetStatus("Следы и профили очищены.", SuccessDot);
+                AppendLog("Локальные настройки и профили браузера удалены.");
+            }
+            catch (Exception exc)
+            {
+                SetStatus("Не всё удалось удалить (закройте браузер): " + exc.Message, ErrorDot);
+            }
         }
     }
 }

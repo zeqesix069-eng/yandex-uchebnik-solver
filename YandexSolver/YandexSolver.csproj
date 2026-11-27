@@ -45,6 +45,7 @@
     <Compile Include="AppSettings.cs" />
     <Compile Include="CdpClient.cs" />
     <Compile Include="CertificateResolver.cs" />
+    <Compile Include="InformaticsTools.cs" />
     <Compile Include="LessonAutomation.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

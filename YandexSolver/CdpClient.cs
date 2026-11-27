@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
@@ -93,7 +94,105 @@ namespace YandexSolver
             }
         }
 
-        public async Task<object> EvaluateAsync(string expression, CancellationToken ct)
+        public Task<object> EvaluateAsync(string expression, CancellationToken ct)
+        {
+            return EvaluateAsync(expression, null, ct);
+        }
+
+        public async Task<object> EvaluateAsync(string expression, int? contextId, CancellationToken ct)
+        {
+            var evalParams = new Dictionary<string, object>
+            {
+                { "expression", expression },
+                { "returnByValue", true },
+                { "awaitPromise", true }
+            };
+            if (contextId.HasValue)
+            {
+                evalParams["contextId"] = contextId.Value;
+            }
+
+            Dictionary<string, object> resultWrapper = await SendCommandAsync("Runtime.evaluate", evalParams, ct).ConfigureAwait(false);
+            if (resultWrapper == null)
+            {
+                return null;
+            }
+
+            if (resultWrapper.ContainsKey("exceptionDetails"))
+            {
+                throw new InvalidOperationException("JS error: " + _json.Serialize(resultWrapper["exceptionDetails"]));
+            }
+
+            var inner = resultWrapper.ContainsKey("result") ? resultWrapper["result"] as Dictionary<string, object> : null;
+            if (inner == null || !inner.ContainsKey("value"))
+            {
+                return null;
+            }
+
+            return inner["value"];
+        }
+
+        public async Task<List<int>> GetChildFrameContextIdsAsync(CancellationToken ct)
+        {
+            var contexts = new List<int>();
+            try
+            {
+                Dictionary<string, object> treeRes = await SendCommandAsync("Page.getFrameTree", new Dictionary<string, object>(), ct).ConfigureAwait(false);
+                if (treeRes == null || !treeRes.ContainsKey("frameTree"))
+                {
+                    return contexts;
+                }
+
+                var frameIds = new List<string>();
+                CollectChildFrameIds(treeRes["frameTree"] as Dictionary<string, object>, true, frameIds);
+                foreach (string frameId in frameIds)
+                {
+                    try
+                    {
+                        var isoParams = new Dictionary<string, object>
+                        {
+                            { "frameId", frameId },
+                            { "worldName", "ys_iso" },
+                            { "grantUniveralAccess", true }
+                        };
+                        Dictionary<string, object> isoRes = await SendCommandAsync("Page.createIsolatedWorld", isoParams, ct).ConfigureAwait(false);
+                        if (isoRes != null && isoRes.ContainsKey("executionContextId"))
+                        {
+                            contexts.Add(Convert.ToInt32(isoRes["executionContextId"]));
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return contexts;
+        }
+
+        private static void CollectChildFrameIds(Dictionary<string, object> node, bool isRoot, List<string> outIds)
+        {
+            if (node == null) return;
+            if (!isRoot && node.ContainsKey("frame"))
+            {
+                var frame = node["frame"] as Dictionary<string, object>;
+                if (frame != null && frame.ContainsKey("id"))
+                {
+                    outIds.Add(Convert.ToString(frame["id"]));
+                }
+            }
+            if (node.ContainsKey("childFrames") && node["childFrames"] is ArrayList)
+            {
+                foreach (object child in (ArrayList)node["childFrames"])
+                {
+                    CollectChildFrameIds(child as Dictionary<string, object>, false, outIds);
+                }
+            }
+        }
+
+        public async Task<Dictionary<string, object>> SendCommandAsync(string method, Dictionary<string, object> parameters, CancellationToken ct)
         {
             if (!IsConnected)
             {
@@ -104,15 +203,8 @@ namespace YandexSolver
             var payload = new Dictionary<string, object>
             {
                 { "id", id },
-                { "method", "Runtime.evaluate" },
-                {
-                    "params", new Dictionary<string, object>
-                    {
-                        { "expression", expression },
-                        { "returnByValue", true },
-                        { "awaitPromise", true }
-                    }
-                }
+                { "method", method },
+                { "params", parameters ?? new Dictionary<string, object>() }
             };
 
             string reqText = _json.Serialize(payload);
@@ -138,24 +230,7 @@ namespace YandexSolver
                     throw new InvalidOperationException("CDP error: " + _json.Serialize(doc["error"]));
                 }
 
-                var resultWrapper = doc.ContainsKey("result") ? doc["result"] as Dictionary<string, object> : null;
-                if (resultWrapper == null)
-                {
-                    return null;
-                }
-
-                if (resultWrapper.ContainsKey("exceptionDetails"))
-                {
-                    throw new InvalidOperationException("JS error: " + _json.Serialize(resultWrapper["exceptionDetails"]));
-                }
-
-                var inner = resultWrapper.ContainsKey("result") ? resultWrapper["result"] as Dictionary<string, object> : null;
-                if (inner == null || !inner.ContainsKey("value"))
-                {
-                    return null;
-                }
-
-                return inner["value"];
+                return doc.ContainsKey("result") ? doc["result"] as Dictionary<string, object> : null;
             }
         }
 

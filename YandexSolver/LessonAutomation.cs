@@ -17,6 +17,7 @@ namespace YandexSolver
         public bool HasFinish { get; set; }
         public bool IsCorrectBanner { get; set; }
         public bool IsErrorBanner { get; set; }
+        public int? TargetContextId { get; set; }
         public List<TaskControl> Controls { get; set; }
 
         public PageTaskState()
@@ -132,6 +133,45 @@ namespace YandexSolver
                 }
             }
 
+            if (state.Controls.Count == 0)
+            {
+                List<int> childContexts = await _cdp.GetChildFrameContextIdsAsync(ct).ConfigureAwait(false);
+                foreach (int ctxId in childContexts)
+                {
+                    try
+                    {
+                        object frameRaw = await _cdp.EvaluateAsync(script, ctxId, ct).ConfigureAwait(false);
+                        string frameJson = Convert.ToString(frameRaw);
+                        var frameDict = _json.Deserialize<Dictionary<string, object>>(frameJson);
+                        if (frameDict != null && frameDict.ContainsKey("controls") && frameDict["controls"] is ArrayList)
+                        {
+                            var frameControls = (ArrayList)frameDict["controls"];
+                            if (frameControls.Count > 0)
+                            {
+                                state.TargetContextId = ctxId;
+                                foreach (object item in frameControls)
+                                {
+                                    var c = item as Dictionary<string, object>;
+                                    if (c == null) continue;
+                                    state.Controls.Add(new TaskControl
+                                    {
+                                        Index = Convert.ToInt32(c["index"]),
+                                        Kind = GetString(c, "kind"),
+                                        Label = GetString(c, "label"),
+                                        Value = GetString(c, "value"),
+                                        Checked = GetBool(c, "checked")
+                                    });
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
             return state;
         }
 
@@ -201,8 +241,53 @@ namespace YandexSolver
                 return 'noop';
             })(" + actionJson + ")";
 
-            object applied = await _cdp.EvaluateAsync(applyScript, ct).ConfigureAwait(false);
+            object applied = await _cdp.EvaluateAsync(applyScript, state.TargetContextId, ct).ConfigureAwait(false);
             return Convert.ToString(applied);
+        }
+
+        public async Task<bool> FillYandexKidsLoginAsync(string schoolCode, string login, CancellationToken ct)
+        {
+            string argsJson = _json.Serialize(new Dictionary<string, object>
+            {
+                { "school", schoolCode ?? string.Empty },
+                { "login", login ?? string.Empty }
+            });
+            string script = @"(function(creds) {
+                function setNativeValue(el, val) {
+                    var desc = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+                    if (desc && desc.set) desc.set.call(el, val);
+                    else el.value = val;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                var inputs = Array.prototype.slice.call(document.querySelectorAll('input'));
+                var visible = inputs.filter(function(el) {
+                    var r = el.getBoundingClientRect();
+                    return r.width > 0 && r.height > 0 && el.type !== 'hidden';
+                });
+                if (visible.length === 0) return false;
+                var filled = false;
+                for (var i = 0; i < visible.length; i++) {
+                    var el = visible[i];
+                    var hint = ((el.placeholder || '') + ' ' + (el.name || '') + ' ' + (el.getAttribute('aria-label') || '')).toLowerCase();
+                    if ((hint.indexOf('школ') >= 0 || hint.indexOf('код') >= 0) && creds.school) {
+                        setNativeValue(el, creds.school);
+                        filled = true;
+                    } else if ((hint.indexOf('логин') >= 0 || hint.indexOf('имя') >= 0 || hint.indexOf('login') >= 0) && creds.login) {
+                        setNativeValue(el, creds.login);
+                        filled = true;
+                    }
+                }
+                if (!filled && visible.length >= 2) {
+                    if (creds.school) setNativeValue(visible[0], creds.school);
+                    if (creds.login) setNativeValue(visible[1], creds.login);
+                    filled = true;
+                }
+                return filled;
+            })(" + argsJson + ")";
+
+            object res = await _cdp.EvaluateAsync(script, ct).ConfigureAwait(false);
+            return res is bool && (bool)res;
         }
 
         public async Task<bool> ClickButtonAsync(string[] titles, CancellationToken ct)
