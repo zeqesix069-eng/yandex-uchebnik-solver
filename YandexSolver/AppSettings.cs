@@ -257,6 +257,10 @@ namespace YandexSolver
                     return new KeyValuePair<string, string>(
                         "https://wusrouter.com/v1",
                         "jailbreak/gpt-6-sol");
+                case "Dark API":
+                    return new KeyValuePair<string, string>(
+                        "https://darkapi.shop/v1",
+                        "gpt-6.1-sol");
                 case "Ollama (локально)":
                     return new KeyValuePair<string, string>(
                         "http://localhost:11434/v1",

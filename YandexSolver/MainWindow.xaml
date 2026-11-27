@@ -484,6 +484,7 @@
                                             <ComboBoxItem Content="Groq" />
                                             <ComboBoxItem Content="OpenAI" />
                                             <ComboBoxItem Content="WusRouter" />
+                                            <ComboBoxItem Content="Dark API" />
                                             <ComboBoxItem Content="Ollama (локально)" />
                                             <ComboBoxItem Content="Custom" />
                                         </ComboBox>
