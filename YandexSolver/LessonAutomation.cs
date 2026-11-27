@@ -540,7 +540,9 @@ namespace YandexSolver
             }
             sb.AppendLine();
             sb.AppendLine("Верни строго JSON одного из форматов:");
-            sb.AppendLine("1) Для выбора вариантов (radio/checkbox): {\"type\":\"choice\",\"indices\":[0]} (для checkbox укажи ВСЕ подходящие варианты)");
+            sb.AppendLine("1) Для выбора вариантов (radio/checkbox): {\"type\":\"choice\",\"indices\":[0]}");
+            sb.AppendLine("   - Если kind=radio: выбери ровно 1 индекс.");
+            sb.AppendLine("   - Если kind=checkbox (квадратики): в Яндекс Учебнике обычно 2 и более верных ответа — обязательно укажи ВСЕ подходящие индексы (не меньше 2).");
             sb.AppendLine("2) Для ввода текста/чисел/кода/списков по порядку: {\"type\":\"inputs\",\"values\":[\"ответ\"]}");
             sb.AppendLine("3) Для перетаскивания карточек в зоны: {\"type\":\"drag\",\"moves\":[{\"itemIndex\":0,\"targetIndex\":0}]}");
             return sb.ToString();
