@@ -152,14 +152,16 @@ namespace YandexSolver
                 try
                 {
                     MethodInfo recMethod = OcrEngineType.GetMethod("RecognizeAsync");
-                    object ocrRes = AwaitWinRt(recMethod.Invoke(engine, new[] { bitmap }), OcrResultType);
-                    string text = ExtractText(ocrRes);
-                    if (string.IsNullOrEmpty(text) && EnEngine != null && !ReferenceEquals(engine, EnEngine))
+                    string ruText = ExtractText(AwaitWinRt(recMethod.Invoke(engine, new[] { bitmap }), OcrResultType));
+                    if (EnEngine != null && !ReferenceEquals(engine, EnEngine))
                     {
-                        object enRes = AwaitWinRt(recMethod.Invoke(EnEngine, new[] { bitmap }), OcrResultType);
-                        text = ExtractText(enRes);
+                        string enText = ExtractText(AwaitWinRt(recMethod.Invoke(EnEngine, new[] { bitmap }), OcrResultType));
+                        if (string.IsNullOrEmpty(ruText) || (!string.IsNullOrEmpty(enText) && LooksLikeCodeOrAscii(enText)))
+                        {
+                            return enText;
+                        }
                     }
-                    return text;
+                    return ruText;
                 }
                 finally
                 {
@@ -170,6 +172,21 @@ namespace YandexSolver
             {
                 if (stream is IDisposable) ((IDisposable)stream).Dispose();
             }
+        }
+
+        private static bool LooksLikeCodeOrAscii(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return false;
+            if (s.IndexOf('<') >= 0 || s.IndexOf('>') >= 0 || s.IndexOf('@') >= 0 || s.IndexOf('{') >= 0)
+            {
+                return true;
+            }
+            int asciiLetters = 0;
+            foreach (char c in s)
+            {
+                if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) asciiLetters++;
+            }
+            return asciiLetters >= s.Length / 2;
         }
 
         private static string ExtractText(object ocrRes)

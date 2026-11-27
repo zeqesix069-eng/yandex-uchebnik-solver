@@ -195,8 +195,10 @@ namespace YandexSolver
         public async Task DragAsync(int fromX, int fromY, int toX, int toY, CancellationToken ct)
         {
             await DispatchMouseAsync("mouseMoved", fromX, fromY, "none", 0, ct).ConfigureAwait(false);
+            await Task.Delay(30, ct).ConfigureAwait(false);
             await DispatchMouseAsync("mousePressed", fromX, fromY, "left", 1, ct).ConfigureAwait(false);
-            const int steps = 8;
+            await Task.Delay(40, ct).ConfigureAwait(false);
+            const int steps = 10;
             for (int i = 1; i <= steps; i++)
             {
                 int x = fromX + (toX - fromX) * i / steps;
@@ -204,6 +206,7 @@ namespace YandexSolver
                 await DispatchMouseAsync("mouseMoved", x, y, "left", 1, ct).ConfigureAwait(false);
                 await Task.Delay(25, ct).ConfigureAwait(false);
             }
+            await Task.Delay(40, ct).ConfigureAwait(false);
             await DispatchMouseAsync("mouseReleased", toX, toY, "left", 1, ct).ConfigureAwait(false);
         }
 
