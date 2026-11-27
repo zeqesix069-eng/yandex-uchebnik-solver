@@ -1,855 +1,684 @@
+<!-- MainWindow.xaml -->
 <Window x:Class="YandexSolver.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="EduTools · by zxchomezxc"
-        Width="780"
-        Height="560"
-        WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent"
-        ResizeMode="NoResize"
-        WindowStartupLocation="CenterScreen">
-    <Border Margin="10"
-            Background="{DynamicResource BgRootBrush}"
-            BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="1"
-            CornerRadius="{DynamicResource WindowRadius}">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.4" Color="#000000" />
-        </Border.Effect>
-
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="46" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="32" />
-            </Grid.RowDefinitions>
-
-            <Border Grid.Row="0"
-                    Background="{DynamicResource BgChromeBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}"
-                    BorderThickness="0,0,0,1"
-                    CornerRadius="{DynamicResource HeaderRadius}"
-                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                <Grid Margin="14,0,10,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock Grid.Column="0"
-                               Text="EduTools · by zxchomezxc"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               FontFamily="Segoe UI"
-                               FontSize="13.5"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center"
-                               Margin="0,0,18,0" />
-
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <RadioButton x:Name="WorkTabRadio"
-                                     Content="Яндекс Учебник"
-                                     Style="{StaticResource NavTabStyle}"
-                                     IsChecked="True"
-                                     Checked="NavTab_Changed"
-                                     Margin="0,0,4,0" />
-                        <RadioButton x:Name="DatalessonTabRadio"
-                                     Content="Урок Цифры"
-                                     Style="{StaticResource NavTabStyle}"
-                                     Checked="NavTab_Changed"
-                                     Margin="0,0,4,0" />
-                        <RadioButton x:Name="InformaticsTabRadio"
-                                     Content="Информатика"
-                                     Style="{StaticResource NavTabStyle}"
-                                     Checked="NavTab_Changed"
-                                     Margin="0,0,4,0" />
-                        <RadioButton x:Name="SettingsTabRadio"
-                                     Content="Настройки"
-                                     Style="{StaticResource NavTabStyle}"
-                                     Checked="NavTab_Changed" />
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="EduTools · by zxchomezxc" Width="1100" Height="706" MinWidth="660" MinHeight="458"
+        WindowStyle="None" ResizeMode="CanResize" WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BgRootBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="Segoe UI" FontSize="13" TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="43" ResizeBorderThickness="6" GlassFrameThickness="0"
+                            CornerRadius="0" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+    <Border x:Name="ShellFrame" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
+        <Grid Background="{DynamicResource BgRootBrush}" SizeChanged="Shell_SizeChanged">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="RailColumn" Width="202" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Background="{DynamicResource BgChromeBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+                <Grid Margin="12,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="76" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                        <Border Width="32" Height="32" Background="{DynamicResource AccentBrush}" CornerRadius="8">
+                            <Path Fill="White" Width="20" Height="16" Stretch="Fill" Data="M0,1 H14 L11,5 H0 Z M0,7 H10 L7,11 H0 Z M0,13 H6 L3,17 H0 Z M14,8 L20,12 L14,16 Z" />
+                        </Border>
+                        <TextBlock Text="EduTools" FontSize="22" FontWeight="SemiBold" Margin="9,0,0,2"
+                                   VerticalAlignment="Center" Visibility="{DynamicResource NavLabelVisibility}" />
                     </StackPanel>
-
-                    <Border Grid.Column="3"
-                            Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource ControlRadius}"
-                            Padding="8,4"
-                            VerticalAlignment="Center"
-                            Margin="0,0,10,0">
-                        <StackPanel Orientation="Horizontal">
-                            <Ellipse x:Name="ConnectionDot" Width="7" Height="7" Fill="#71717A" VerticalAlignment="Center" Margin="0,0,6,0" />
-                            <TextBlock x:Name="ConnectionPillText"
-                                       Text="CDP: не подключён"
-                                       Foreground="{DynamicResource TextMutedBrush}"
-                                       FontSize="11.5"
-                                       VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-
-                    <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Content="—" Style="{StaticResource WindowButtonStyle}" Click="Minimize_Click" Margin="0,0,2,0" />
-                        <Button Content="✕" Style="{StaticResource WindowButtonStyle}" Click="Close_Click" />
+                    <StackPanel Grid.Row="1" Margin="0,18,0,0">
+                        <TextBlock Text="Инструменты" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}"
+                                   Margin="13,0,0,8" Visibility="{DynamicResource NavLabelVisibility}" />
+                        <RadioButton x:Name="WorkTabRadio" Content="Яндекс Учебник" GroupName="Navigation" Tag="&#xE736;"
+                                     Style="{StaticResource NavTabStyle}" Checked="NavTab_Changed" IsChecked="True" />
+                        <RadioButton x:Name="DatalessonTabRadio" Content="Урок Цифры" GroupName="Navigation" Tag="&#xEB95;"
+                                     Style="{StaticResource NavTabStyle}" Checked="NavTab_Changed" />
+                        <RadioButton x:Name="InformaticsTabRadio" Content="Информатика" GroupName="Navigation" Tag="&#xE943;"
+                                     Style="{StaticResource NavTabStyle}" Checked="NavTab_Changed" />
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                        <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="4,0,4,9" />
+                        <RadioButton x:Name="SettingsTabRadio" Content="Настройки" GroupName="Navigation" Tag="&#xE713;"
+                                     Style="{StaticResource NavTabStyle}" Checked="NavTab_Changed" />
+                        <TextBlock Text="by zxchomezxc" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
+                                   Margin="13,9,0,1" Visibility="{DynamicResource NavLabelVisibility}" />
                     </StackPanel>
                 </Grid>
             </Border>
-
-            <Grid x:Name="WorkPanel" Grid.Row="1" Margin="16">
+            <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="130" />
+                    <RowDefinition Height="43" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="32" />
                 </Grid.RowDefinitions>
-
-                <Border Grid.Row="0"
-                        Background="{DynamicResource BgSurfaceBrush}"
-                        BorderBrush="{DynamicResource BorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="{DynamicResource CardRadius}"
-                        Padding="12"
-                        Margin="0,0,0,10">
-                    <Grid>
+                <Border Background="{DynamicResource BgChromeBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+                    <Grid Margin="20,0,6,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="Браузер (Chrome / Edge CDP)"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       FontSize="13"
-                                       FontWeight="SemiBold" />
-                            <TextBlock x:Name="BrowserStatusLabel"
-                                       Text="Откройте браузер, войдите в учебник и подключитесь"
-                                       Foreground="{DynamicResource TextMutedBrush}"
-                                       FontSize="12"
-                                       Margin="0,2,0,0" />
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE8A9;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="Рабочее пространство" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" Margin="9,0,0,0" />
                         </StackPanel>
-
-                        <Button Grid.Column="1"
-                                Content="Chrome"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Click="LaunchChrome_Click"
-                                Margin="8,0,6,0" />
-
-                        <Button Grid.Column="2"
-                                Content="Edge"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Click="LaunchEdge_Click"
-                                Margin="0,0,6,0" />
-
-                        <Button Grid.Column="3"
-                                x:Name="ConnectButton"
-                                Content="Подключить"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Click="ConnectCdp_Click"
-                                Margin="0,0,6,0" />
-
-                        <Button Grid.Column="4"
-                                Content="Автовход"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Click="AutoLogin_Click"
-                                Margin="0,0,6,0" />
-
-                        <Button Grid.Column="5"
-                                Content="Обновить"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Click="RefreshTask_Click" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                            <Ellipse x:Name="ConnectionDot" Height="7" Width="7" Fill="#8893A4" VerticalAlignment="Center" Margin="0,0,7,0" />
+                            <TextBlock x:Name="ConnectionPillText" Text="Браузер отключён" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Button Content="&#xE921;" ToolTip="Свернуть" AutomationProperties.Name="Свернуть" Style="{StaticResource WindowButtonStyle}" Click="Minimize_Click" />
+                            <Button x:Name="MaximizeButton" Content="&#xE922;" ToolTip="Развернуть" AutomationProperties.Name="Развернуть" Style="{StaticResource WindowButtonStyle}" Click="Maximize_Click" />
+                            <Button Content="&#xE8BB;" ToolTip="Закрыть" AutomationProperties.Name="Закрыть" Style="{StaticResource WindowButtonStyle}" Click="Close_Click" />
+                        </StackPanel>
                     </Grid>
                 </Border>
-
-                <Grid Grid.Row="1" Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="8" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="8" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="10" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <Button Grid.Column="0"
-                            x:Name="SolveStepButton"
-                            Content="Решить текущий шаг"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Click="SolveStep_Click" />
-
-                    <Button Grid.Column="2"
-                            x:Name="AutoRunButton"
-                            Content="Автопрохождение"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Click="AutoRun_Click" />
-
-                    <Button Grid.Column="4"
-                            x:Name="StopButton"
-                            Content="Стоп"
-                            Style="{StaticResource DangerButtonStyle}"
-                            IsEnabled="False"
-                            Click="Stop_Click" />
-
-                    <Border Grid.Column="6"
-                            Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource ControlRadius}"
-                            Padding="10,0">
-                        <TextBlock x:Name="SolvedCounterText"
-                                   Text="Шагов: 0"
-                                   Foreground="{DynamicResource TextMutedBrush}"
-                                   FontSize="12"
-                                   VerticalAlignment="Center" />
-                    </Border>
-                </Grid>
-
-                <Border Grid.Row="2"
-                        Background="{DynamicResource BgSurfaceBrush}"
-                        BorderBrush="{DynamicResource BorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="{DynamicResource CardRadius}"
-                        Padding="10"
-                        Margin="0,0,0,10">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0"
-                                   Text="Текущее задание"
-                                   Foreground="{DynamicResource TextMutedBrush}"
-                                   FontSize="11.5"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,6" />
-                        <TextBox x:Name="TaskPreviewBox"
-                                 Grid.Row="1"
-                                 IsReadOnly="True"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Background="{DynamicResource BgLogBrush}"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 BorderBrush="{DynamicResource BorderBrush}"
-                                 BorderThickness="1"
-                                 FontSize="12"
-                                 Padding="8"
-                                 Text="Нажмите «Обновить» после подключения к вкладке задания." />
-                    </Grid>
-                </Border>
-
-                <Border Grid.Row="3"
-                        Background="{DynamicResource BgSurfaceBrush}"
-                        BorderBrush="{DynamicResource BorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="{DynamicResource CardRadius}"
-                        Padding="10">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Grid Grid.Row="0" Margin="0,0,0,6">
-                            <TextBlock Text="Журнал"
-                                       Foreground="{DynamicResource TextMutedBrush}"
-                                       FontSize="11.5"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center" />
-                            <Button Content="Очистить"
-                                    HorizontalAlignment="Right"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Padding="8,3"
-                                    FontSize="11"
-                                    Click="ClearLog_Click" />
-                        </Grid>
-                        <TextBox x:Name="LogBox"
-                                 Grid.Row="1"
-                                 IsReadOnly="True"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Background="{DynamicResource BgLogBrush}"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 BorderBrush="{DynamicResource BorderBrush}"
-                                 BorderThickness="1"
-                                 FontFamily="Consolas"
-                                 FontSize="11.5"
-                                 Padding="8" />
-                    </Grid>
-                </Border>
-            </Grid>
-
-            <Grid x:Name="DatalessonPanel" Grid.Row="1" Margin="16" Visibility="Collapsed">
-                <StackPanel>
-                    <Border Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource CardRadius}"
-                            Padding="16"
-                            Margin="0,0,0,12">
-                        <StackPanel>
-                            <TextBlock Text="Получение сертификата «Урок Цифры»"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,4" />
-                            <TextBlock Text="Вставьте ссылку на тренажёр или страницу урока с параметром session_id"
-                                       Foreground="{DynamicResource TextMutedBrush}"
-                                       FontSize="12"
-                                       Margin="0,0,0,14" />
-
-                            <TextBlock Text="Ссылка на урок"
-                                       Foreground="{DynamicResource TextMutedBrush}"
-                                       FontSize="11.5"
-                                       Margin="0,0,0,4" />
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="DlUrlBox"
-                                         Grid.Column="0"
-                                         Style="{StaticResource InputTextBoxStyle}"
-                                         KeyDown="DlUrlBox_KeyDown"
-                                         Margin="0,0,8,0" />
-                                <Button Grid.Column="1"
-                                        Content="Вставить"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        Click="DlPaste_Click" />
+                <ScrollViewer x:Name="WorkPanel" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Grid x:Name="WorkCanvas" Height="{Binding ViewportHeight, ElementName=WorkPanel}" MinHeight="500">
+                        <Grid Margin="24,19,24,20">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid Margin="0,0,0,17">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Яндекс Учебник" Style="{StaticResource Hint}" />
+                                    <TextBlock Text="Прохождение заданий" Style="{StaticResource PageTitle}" Margin="0,2,0,0" />
+                                </StackPanel>
+                                <WrapPanel x:Name="RunCommands" Grid.Column="1" VerticalAlignment="Center" Margin="12,4,0,0">
+                                    <Button x:Name="AutoRunButton" Style="{StaticResource PrimaryButtonStyle}" Click="AutoRun_Click" AutomationProperties.Name="Автопрохождение" Margin="0,0,6,3">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" FontSize="12" Margin="0,0,7,0" />
+                                            <TextBlock Text="Автопрохождение" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="SolveStepButton" Content="Решить шаг" ToolTip="Решить текущий шаг" Style="{StaticResource SecondaryButtonStyle}" Click="SolveStep_Click" Margin="0,0,6,3" />
+                                    <Button x:Name="StopButton" Content="Стоп" Style="{StaticResource DangerButtonStyle}" Click="Stop_Click" IsEnabled="False" Margin="0,0,0,3" />
+                                </WrapPanel>
                             </Grid>
-
-                            <Grid Margin="0,0,0,14">
+                            <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <DockPanel LastChildFill="True">
+                                        <Button DockPanel.Dock="Right" Content="Автовход" Style="{StaticResource SecondaryButtonStyle}" Click="AutoLogin_Click" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                        <Border Background="{DynamicResource NavSelectionBrush}" CornerRadius="7" Width="38" Height="38" Margin="0,0,12,0" VerticalAlignment="Center">
+                                            <TextBlock Text="&#xE774;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource NavInkBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel>
+                                            <TextBlock Text="Подключение браузера" Style="{StaticResource SectionTitle}" />
+                                            <TextBlock x:Name="BrowserStatusLabel" Text="Откройте задание в Chrome или Edge и нажмите «Подключить»." Style="{StaticResource Hint}" Margin="0,3,0,0" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <WrapPanel Margin="0,14,0,0">
+                                        <Button Content="Открыть Chrome" Style="{StaticResource SecondaryButtonStyle}" Click="LaunchChrome_Click" Margin="0,0,6,0" />
+                                        <Button Content="Открыть Edge" Style="{StaticResource SecondaryButtonStyle}" Click="LaunchEdge_Click" Margin="0,0,12,0" />
+                                        <Button x:Name="ConnectButton" Content="Подключить" Style="{StaticResource SecondaryButtonStyle}" FontWeight="SemiBold"
+                                                Foreground="{DynamicResource NavInkBrush}" Background="{DynamicResource NavSelectionBrush}" Click="ConnectCdp_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Border>
+                            <Grid Grid.Row="2">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="220" />
-                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="1.38*" /><ColumnDefinition x:Name="WorkGutter" Width="14" /><ColumnDefinition x:Name="LogColumn" Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           Text="Код урока (необязательно):"
+                                <Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                <Border Style="{StaticResource Card}" Padding="0" MinHeight="246">
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                                        <DockPanel Margin="17,12,12,8">
+                                            <Button DockPanel.Dock="Right" Content="&#xE72C;" Style="{StaticResource IconButton}" ToolTip="Обновить задание" AutomationProperties.Name="Обновить задание" Click="RefreshTask_Click" />
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0">
+                                                <TextBlock Text="Шагов" Style="{StaticResource Hint}" FontSize="12" VerticalAlignment="Center" Margin="0,0,5,0" />
+                                                <TextBlock x:Name="SolvedCounterText" Text="0" FontFamily="Consolas" FontSize="14" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <TextBlock Text="Текущее задание" Style="{StaticResource SectionTitle}" />
+                                        </DockPanel>
+                                        <Grid Grid.Row="1" Margin="17,0,17,10">
+                                            <TextBox x:Name="TaskPreviewBox" Style="{StaticResource OutputBox}" Background="Transparent" BorderThickness="0" Padding="0,4" />
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="8,10" IsHitTestVisible="False">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                        <Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=TaskPreviewBox}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <Border Width="42" Height="42" CornerRadius="10" Background="{DynamicResource NavSelectionBrush}" HorizontalAlignment="Center">
+                                                    <TextBlock Text="&#xE8A5;" Foreground="{DynamicResource NavInkBrush}" FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <TextBlock Text="Ожидание задания" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,9,0,3" />
+                                                <TextBlock Text="После подключения здесь появится текст задания." Style="{StaticResource Hint}" TextAlignment="Center" MaxWidth="240" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                                <Border x:Name="JournalCard" Grid.Column="2" Style="{StaticResource Card}" Padding="0" MinHeight="170">
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                                        <DockPanel Margin="17,12,12,8">
+                                            <Button DockPanel.Dock="Right" Content="&#xE74D;" Style="{StaticResource IconButton}" ToolTip="Очистить журнал" AutomationProperties.Name="Очистить журнал" Click="ClearLog_Click" />
+                                            <TextBlock Text="Журнал" Style="{StaticResource SectionTitle}" />
+                                        </DockPanel>
+                                        <Border Grid.Row="1" Background="{DynamicResource BgLogBrush}" CornerRadius="{DynamicResource ControlRadius}" Margin="12,0,12,12">
+                                            <Grid>
+                                                <TextBox x:Name="LogBox" Style="{StaticResource OutputBox}" FontFamily="Consolas" FontSize="12.5" Padding="11" BorderThickness="0" />
+                                                <TextBlock Text="Пока нет событий" FontFamily="Consolas" FontSize="12.5" Margin="11" Foreground="{DynamicResource TextMutedBrush}" IsHitTestVisible="False">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=LogBox}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </ScrollViewer>
+                <ScrollViewer x:Name="DatalessonPanel" Grid.Row="1" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                    <StackPanel Margin="24,20,24,18">
+                        <TextBlock Text="Урок Цифры" Style="{StaticResource PageTitle}" />
+                        <Border Style="{StaticResource Card}"
+                                Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Получение сертификата"
+                                           Style="{StaticResource SectionTitle}"
+                                           Margin="0,0,0,4" />
+                                <TextBlock Text="Вставьте ссылку на тренажёр или страницу урока с параметром session_id."
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            FontSize="12"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,10,0" />
-                                <TextBox x:Name="DlSlugBox"
-                                         Grid.Column="1"
-                                         Style="{StaticResource InputTextBoxStyle}" />
-                            </Grid>
+                                           Margin="0,0,0,14" />
 
-                            <Button x:Name="DlResolveButton"
-                                    Content="Получить сертификат"
-                                    Style="{StaticResource PrimaryButtonStyle}"
-                                    HorizontalAlignment="Left"
-                                    Padding="18,9"
-                                    Click="DlResolve_Click" />
-                        </StackPanel>
-                    </Border>
+                                <TextBlock Text="Ссылка на урок"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           FontSize="12"
+                                           Margin="0,0,0,4" />
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="DlUrlBox"
+                                             Grid.Column="0"
+                                             Style="{StaticResource InputTextBoxStyle}"
+                                             KeyDown="DlUrlBox_KeyDown"
+                                             Margin="0,0,8,0" />
+                                    <Button Grid.Column="1"
+                                            Content="Вставить"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Click="DlPaste_Click" />
+                                </Grid>
 
-                    <Border Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource CardRadius}"
-                            Padding="16">
-                        <StackPanel>
-                            <TextBlock Text="Ссылка на сертификат"
-                                       Foreground="{DynamicResource TextMutedBrush}"
-                                       FontSize="11.5"
-                                       Margin="0,0,0,6" />
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="DlResultBox"
-                                         Grid.Column="0"
-                                         Style="{StaticResource InputTextBoxStyle}"
-                                         IsReadOnly="True"
-                                         Margin="0,0,8,0" />
-                                <Button x:Name="DlCopyButton"
-                                        Grid.Column="1"
-                                        Content="Копировать"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        IsEnabled="False"
-                                        Click="DlCopy_Click"
-                                        Margin="0,0,6,0" />
-                                <Button x:Name="DlOpenButton"
-                                        Grid.Column="2"
-                                        Content="Открыть"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        IsEnabled="False"
-                                        Click="DlOpen_Click" />
-                            </Grid>
-                            <TextBlock x:Name="DlStatusText"
-                                       Text="Ожидание ссылки..."
-                                       Foreground="{DynamicResource TextMutedBrush}"
-                                       FontSize="12"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Grid>
+                                <Grid Margin="0,0,0,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="220" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Код урока (необязательно)"
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               FontSize="12"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,10,0" />
+                                    <TextBox x:Name="DlSlugBox"
+                                             Grid.Column="1"
+                                             Style="{StaticResource InputTextBoxStyle}" />
+                                </Grid>
 
-            <ScrollViewer x:Name="InformaticsPanel"
-                          Grid.Row="1"
-                          Margin="16"
-                          VerticalScrollBarVisibility="Auto"
-                          Visibility="Collapsed">
-                <StackPanel>
-                    <Border Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource CardRadius}"
-                            Padding="14"
-                            Margin="0,0,0,10">
-                        <StackPanel>
-                            <TextBlock Text="Системы счисления (2 ↔ 8 ↔ 10 ↔ 16)"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       FontSize="13.5"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,8" />
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="BaseInputBox" Grid.Column="0" Style="{StaticResource InputTextBoxStyle}" Text="255" />
-                                <ComboBox x:Name="BaseFromCombo" Grid.Column="2" Style="{StaticResource DarkComboBoxStyle}">
-                                    <ComboBoxItem Content="10 (DEC)" IsSelected="True" />
-                                    <ComboBoxItem Content="2 (BIN)" />
-                                    <ComboBoxItem Content="8 (OCT)" />
-                                    <ComboBoxItem Content="16 (HEX)" />
-                                </ComboBox>
-                                <Button Grid.Column="4" Content="Перевести" Style="{StaticResource PrimaryButtonStyle}" Click="ConvertBase_Click" />
-                            </Grid>
-                            <TextBox x:Name="BaseOutputBox"
-                                     IsReadOnly="True"
-                                     FontFamily="Consolas"
-                                     FontSize="12"
-                                     Background="{DynamicResource BgLogBrush}"
-                                     Foreground="{DynamicResource TextPrimaryBrush}"
-                                     BorderBrush="{DynamicResource BorderBrush}"
-                                     BorderThickness="1"
-                                     Padding="8"
-                                     Height="74" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource CardRadius}"
-                            Padding="14"
-                            Margin="0,0,0,10">
-                        <StackPanel>
-                            <TextBlock Text="Объём информации (текст / изображение)"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       FontSize="13.5"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,8" />
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Символов / Ширина" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Margin="0,0,0,3" />
-                                    <TextBox x:Name="InfoArg1Box" Style="{StaticResource InputTextBoxStyle}" Text="1024" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Бит/симв. / Высота" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Margin="0,0,0,3" />
-                                    <TextBox x:Name="InfoArg2Box" Style="{StaticResource InputTextBoxStyle}" Text="16" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="4">
-                                    <TextBlock Text="Глубина цвета (0=текст)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Margin="0,0,0,3" />
-                                    <TextBox x:Name="InfoArg3Box" Style="{StaticResource InputTextBoxStyle}" Text="0" />
-                                </StackPanel>
-                                <Button Grid.Column="6" VerticalAlignment="Bottom" Content="Посчитать" Style="{StaticResource SecondaryButtonStyle}" Click="CalcInfoSize_Click" />
-                            </Grid>
-                            <TextBox x:Name="InfoOutputBox" Style="{StaticResource InputTextBoxStyle}" IsReadOnly="True" FontFamily="Consolas" FontSize="12" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource CardRadius}"
-                            Padding="14">
-                        <StackPanel>
-                            <TextBlock Text="Таблица истинности (and, or, not, xor, ->, ==)"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       FontSize="13.5"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,8" />
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="TruthExprBox" Grid.Column="0" Style="{StaticResource InputTextBoxStyle}" Text="(A or B) and not C" />
-                                <Button Grid.Column="2" Content="Построить" Style="{StaticResource PrimaryButtonStyle}" Click="BuildTruthTable_Click" />
-                            </Grid>
-                            <TextBox x:Name="TruthOutputBox"
-                                     IsReadOnly="True"
-                                     VerticalScrollBarVisibility="Auto"
-                                     FontFamily="Consolas"
-                                     FontSize="12"
-                                     Background="{DynamicResource BgLogBrush}"
-                                     Foreground="{DynamicResource TextPrimaryBrush}"
-                                     BorderBrush="{DynamicResource BorderBrush}"
-                                     BorderThickness="1"
-                                     Padding="8"
-                                     Height="120" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-
-            <ScrollViewer x:Name="SettingsPanel"
-                          Grid.Row="1"
-                          Margin="16"
-                          VerticalScrollBarVisibility="Auto"
-                          Visibility="Collapsed">
-                <StackPanel>
-                    <Border Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource CardRadius}"
-                            Padding="14"
-                            Margin="0,0,0,10">
-                        <StackPanel>
-                            <TextBlock Text="Оформление"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       FontSize="13.5"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,10" />
-
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Тема" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <ComboBox x:Name="ThemeCombo"
-                                              Style="{StaticResource DarkComboBoxStyle}"
-                                              SelectionChanged="Appearance_Changed">
-                                        <ComboBoxItem Content="Dark (Slate)" />
-                                        <ComboBoxItem Content="Light" />
-                                        <ComboBoxItem Content="Midnight" />
-                                        <ComboBoxItem Content="OLED Black" />
-                                        <ComboBoxItem Content="Nord" />
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Акцент" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <ComboBox x:Name="AccentCombo"
-                                              Style="{StaticResource DarkComboBoxStyle}"
-                                              SelectionChanged="Appearance_Changed">
-                                        <ComboBoxItem Content="Синий" />
-                                        <ComboBoxItem Content="Изумрудный" />
-                                        <ComboBoxItem Content="Янтарный" />
-                                        <ComboBoxItem Content="Красный" />
-                                        <ComboBoxItem Content="Серый" />
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="4">
-                                    <TextBlock Text="Скругление" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <ComboBox x:Name="CornerCombo"
-                                              Style="{StaticResource DarkComboBoxStyle}"
-                                              SelectionChanged="Appearance_Changed">
-                                        <ComboBoxItem Content="Острые" />
-                                        <ComboBoxItem Content="Стандарт" />
-                                        <ComboBoxItem Content="Мягкие" />
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="6">
-                                    <Grid Margin="0,0,0,4">
-                                        <TextBlock Text="Прозрачность" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" />
-                                        <TextBlock x:Name="OpacityValueText"
-                                                   Text="100%"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                                   FontSize="11.5"
-                                                   HorizontalAlignment="Right" />
-                                    </Grid>
-                                    <Slider x:Name="OpacitySlider"
-                                            Minimum="0.80"
-                                            Maximum="1.00"
-                                            TickFrequency="0.02"
-                                            IsSnapToTickEnabled="True"
-                                            Value="1.00"
-                                            Margin="0,6,0,0"
-                                            ValueChanged="OpacitySlider_ValueChanged" />
-                                </StackPanel>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource CardRadius}"
-                            Padding="14"
-                            Margin="0,0,0,10">
-                        <StackPanel>
-                            <TextBlock Text="ИИ и API"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       FontSize="13.5"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,10" />
-
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="190" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Провайдер" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <ComboBox x:Name="ProviderCombo"
-                                              Style="{StaticResource DarkComboBoxStyle}"
-                                              SelectionChanged="ProviderCombo_SelectionChanged">
-                                        <ComboBoxItem Content="OpenRouter" />
-                                        <ComboBoxItem Content="Pollinations.ai" />
-                                        <ComboBoxItem Content="Google Gemini" />
-                                        <ComboBoxItem Content="Groq" />
-                                        <ComboBoxItem Content="OpenAI" />
-                                        <ComboBoxItem Content="WusRouter" />
-                                        <ComboBoxItem Content="Ollama (локально)" />
-                                        <ComboBoxItem Content="Custom" />
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Модель" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="ModelBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-                            </Grid>
-
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="API-ключ" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <PasswordBox x:Name="ApiKeyPasswordBox" Style="{StaticResource InputPasswordBoxStyle}" />
-                                        <TextBox x:Name="ApiKeyPlainBox" Style="{StaticResource InputTextBoxStyle}" Visibility="Collapsed" />
-                                        <Button Grid.Column="1"
-                                                Content="Показать"
-                                                Style="{StaticResource SecondaryButtonStyle}"
-                                                Padding="10,6"
-                                                Margin="6,0,0,0"
-                                                Click="ToggleKeyVisibility_Click" />
-                                    </Grid>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Base URL" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="BaseUrlBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-                            </Grid>
-
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="220" />
-                                    <ColumnDefinition Width="12" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0">
-                                    <Grid Margin="0,0,0,4">
-                                        <TextBlock Text="Temperature" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" />
-                                        <TextBlock x:Name="TempValueText"
-                                                   Text="0.10"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                                   FontSize="11.5"
-                                                   HorizontalAlignment="Right" />
-                                    </Grid>
-                                    <Slider x:Name="TempSlider"
-                                            Minimum="0"
-                                            Maximum="1"
-                                            TickFrequency="0.05"
-                                            IsSnapToTickEnabled="True"
-                                            Value="0.1"
-                                            ValueChanged="TempSlider_ValueChanged" />
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Доп. системный промпт (необязательно)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="SystemPromptBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-                            </Grid>
-
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button x:Name="TestApiButton"
-                                        Content="Проверить API"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        Click="TestApi_Click" />
+                                <Button x:Name="DlResolveButton"
+                                        Content="Получить сертификат"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        HorizontalAlignment="Left"
+                                        Padding="18,9"
+                                        Click="DlResolve_Click" />
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
+                        </Border>
 
-                    <Border Background="{DynamicResource BgSurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{DynamicResource CardRadius}"
-                            Padding="14"
-                            Margin="0,0,0,10">
-                        <StackPanel>
-                            <TextBlock Text="Поведение и тайминги"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       FontSize="13.5"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,10" />
-
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Порт CDP" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="CdpPortBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Пауза ответа (мс)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="SubmitDelayBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="4">
-                                    <TextBlock Text="Пауза шага (мс)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="StepDelayBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="6">
-                                    <TextBlock Text="Макс. шагов" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="MaxStepsBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-                            </Grid>
-
-                            <WrapPanel Margin="0,2,0,8">
-                                <CheckBox x:Name="AutoAdvanceCheck"
-                                          Content="Автопереход на «Дальше»"
-                                          Style="{StaticResource DarkCheckBoxStyle}"
-                                          Margin="0,0,18,6" />
-                                <CheckBox x:Name="SkipTheoryCheck"
-                                          Content="Пропускать теорию"
-                                          Style="{StaticResource DarkCheckBoxStyle}"
-                                          Margin="0,0,18,6" />
-                                <CheckBox x:Name="RetryOnWrongCheck"
-                                          Content="Повтор при ошибке"
-                                          Style="{StaticResource DarkCheckBoxStyle}"
-                                          Margin="0,0,18,6" />
-                                <CheckBox x:Name="PortableModeCheck"
-                                          Content="Portable (рядом с exe)"
-                                          Style="{StaticResource DarkCheckBoxStyle}"
-                                          Margin="0,0,18,6" />
-                                <CheckBox x:Name="BossHotkeyCheck"
-                                          Content="Скрытие (Ctrl+Shift+H)"
-                                          Style="{StaticResource DarkCheckBoxStyle}"
-                                          Margin="0,0,0,6" />
-                            </WrapPanel>
-
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Логин ученика" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="StudentLoginBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Код школы (для автовхода)" Foreground="{DynamicResource TextMutedBrush}" FontSize="11.5" Margin="0,0,0,4" />
-                                    <TextBox x:Name="SchoolCodeBox" Style="{StaticResource InputTextBoxStyle}" />
-                                </StackPanel>
-                                <Button Grid.Column="4"
-                                        VerticalAlignment="Bottom"
-                                        Content="Очистить следы"
-                                        Style="{StaticResource DangerButtonStyle}"
-                                        Click="CleanTraces_Click" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Сбросить"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Click="ResetSettings_Click"
-                                Margin="0,0,8,0" />
-                        <Button Content="Сохранить настройки"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Click="SaveSettings_Click" />
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Ссылка на сертификат" Style="{StaticResource SectionTitle}"
+                                           Margin="0,0,0,6" />
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="DlResultBox"
+                                             Grid.Column="0"
+                                             Style="{StaticResource InputTextBoxStyle}"
+                                             IsReadOnly="True"
+                                             Margin="0,0,8,0" />
+                                    <Button x:Name="DlCopyButton"
+                                            Grid.Column="1"
+                                            Content="Копировать"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            IsEnabled="False"
+                                            Click="DlCopy_Click"
+                                            Margin="0,0,6,0" />
+                                    <Button x:Name="DlOpenButton"
+                                            Grid.Column="2"
+                                            Content="Открыть"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            IsEnabled="False"
+                                            Click="DlOpen_Click" />
+                                </Grid>
+                                <TextBlock x:Name="DlStatusText"
+                                           Text="Ссылка появится после проверки урока."
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                </StackPanel>
-            </ScrollViewer>
+                </ScrollViewer>
+                <ScrollViewer x:Name="InformaticsPanel"
+                              Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              Visibility="Collapsed">
+                    <StackPanel Margin="24,20,24,18">
+                        <TextBlock Text="Информатика" Style="{StaticResource PageTitle}" />
+                        <Border Style="{StaticResource Card}"
+                                Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Системы счисления"
+                                           Style="{StaticResource SectionTitle}"
+                                           Margin="0,0,0,8" />
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Число" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="BaseInputBox" Style="{StaticResource InputTextBoxStyle}" Text="255" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Основание" Style="{StaticResource FieldLabel}" />
+                                        <ComboBox x:Name="BaseFromCombo" Style="{StaticResource DarkComboBoxStyle}">
+                                        <ComboBoxItem Content="10 (DEC)" IsSelected="True" />
+                                        <ComboBoxItem Content="2 (BIN)" />
+                                        <ComboBoxItem Content="8 (OCT)" />
+                                        <ComboBoxItem Content="16 (HEX)" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <Button Grid.Column="4" VerticalAlignment="Bottom" Content="Перевести" Style="{StaticResource PrimaryButtonStyle}" Click="ConvertBase_Click" />
+                                </Grid>
+                                <TextBox x:Name="BaseOutputBox" Style="{StaticResource OutputBox}" FontFamily="Consolas" FontSize="13"
+                                         Height="103" />
+                            </StackPanel>
+                        </Border>
 
-            <Border Grid.Row="2"
-                    Background="{DynamicResource BgChromeBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}"
-                    BorderThickness="0,1,0,0"
-                    CornerRadius="{DynamicResource FooterRadius}"
-                    Padding="14,0">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="#71717A" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <TextBlock x:Name="StatusText"
-                               Grid.Column="1"
-                               Text="Готово."
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               FontSize="11.5"
-                               VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2"
-                               Text="by zxchomezxc"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               FontSize="11.5"
-                               VerticalAlignment="Center" />
+                        <Border Style="{StaticResource Card}"
+                                Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Объём информации"
+                                           Style="{StaticResource SectionTitle}"
+                                           Margin="0,0,0,8" />
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Символов / ширина" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="InfoArg1Box" Style="{StaticResource InputTextBoxStyle}" Text="1024" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Бит на символ / высота" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="InfoArg2Box" Style="{StaticResource InputTextBoxStyle}" Text="16" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Глубина цвета (0 для текста)" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="InfoArg3Box" Style="{StaticResource InputTextBoxStyle}" Text="0" />
+                                    </StackPanel>
+                                    <Button Grid.Column="6" VerticalAlignment="Bottom" Content="Посчитать" Style="{StaticResource SecondaryButtonStyle}" Click="CalcInfoSize_Click" />
+                                </Grid>
+                                <TextBox x:Name="InfoOutputBox" Style="{StaticResource InputTextBoxStyle}" IsReadOnly="True" FontFamily="Consolas" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Таблица истинности"
+                                           Style="{StaticResource SectionTitle}"
+                                           Margin="0,0,0,8" />
+                                <TextBlock Text="Операторы: and, or, not, xor, ->, ==" Style="{StaticResource Hint}" Margin="0,0,0,8" />
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="TruthExprBox" Grid.Column="0" Style="{StaticResource InputTextBoxStyle}" Text="(A or B) and not C" />
+                                    <Button Grid.Column="2" Content="Построить" Style="{StaticResource PrimaryButtonStyle}" Click="BuildTruthTable_Click" />
+                                </Grid>
+                                <TextBox x:Name="TruthOutputBox" Style="{StaticResource OutputBox}" FontFamily="Consolas" FontSize="13"
+                                         Height="120" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+                <Grid x:Name="SettingsPanel" Grid.Row="1" Visibility="Collapsed">
+                    <Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,20,24,18">
+                        <TextBlock Text="Настройки" Style="{StaticResource PageTitle}" />
+                        <Border Style="{StaticResource Card}"
+                                Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Оформление"
+                                           Style="{StaticResource SectionTitle}"
+                                           Margin="0,0,0,10" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Тема" Style="{StaticResource FieldLabel}" />
+                                        <ComboBox x:Name="ThemeCombo"
+                                                  Style="{StaticResource DarkComboBoxStyle}"
+                                                  SelectionChanged="Appearance_Changed">
+                                            <ComboBoxItem Content="Dark (Slate)" />
+                                            <ComboBoxItem Content="Light" />
+                                            <ComboBoxItem Content="Midnight" />
+                                            <ComboBoxItem Content="OLED Black" />
+                                            <ComboBoxItem Content="Nord" />
+                                        </ComboBox>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Акцент" Style="{StaticResource FieldLabel}" />
+                                        <ComboBox x:Name="AccentCombo"
+                                                  Style="{StaticResource DarkComboBoxStyle}"
+                                                  SelectionChanged="Appearance_Changed">
+                                            <ComboBoxItem Content="Синий" />
+                                            <ComboBoxItem Content="Изумрудный" />
+                                            <ComboBoxItem Content="Янтарный" />
+                                            <ComboBoxItem Content="Красный" />
+                                            <ComboBoxItem Content="Серый" />
+                                        </ComboBox>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Скругление" Style="{StaticResource FieldLabel}" />
+                                        <ComboBox x:Name="CornerCombo"
+                                                  Style="{StaticResource DarkComboBoxStyle}"
+                                                  SelectionChanged="Appearance_Changed">
+                                            <ComboBoxItem Content="Острые" />
+                                            <ComboBoxItem Content="Стандарт" />
+                                            <ComboBoxItem Content="Мягкие" />
+                                        </ComboBox>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="6">
+                                        <Grid Margin="0,0,0,4">
+                                            <TextBlock Text="Прозрачность" Foreground="{DynamicResource TextMutedBrush}" FontSize="12" />
+                                            <TextBlock x:Name="OpacityValueText"
+                                                       Text="100%"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       FontSize="12"
+                                                       HorizontalAlignment="Right" />
+                                        </Grid>
+                                        <Slider x:Name="OpacitySlider"
+                                                Minimum="0.80"
+                                                Maximum="1.00"
+                                                TickFrequency="0.02"
+                                                IsSnapToTickEnabled="True"
+                                                Value="1.00"
+                                                Margin="0,6,0,0"
+                                                ValueChanged="OpacitySlider_ValueChanged" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}"
+                                Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Модель и API"
+                                           Style="{StaticResource SectionTitle}"
+                                           Margin="0,0,0,10" />
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="190" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Провайдер" Style="{StaticResource FieldLabel}" />
+                                        <ComboBox x:Name="ProviderCombo"
+                                                  Style="{StaticResource DarkComboBoxStyle}"
+                                                  SelectionChanged="ProviderCombo_SelectionChanged">
+                                            <ComboBoxItem Content="OpenRouter" />
+                                            <ComboBoxItem Content="Pollinations.ai" />
+                                            <ComboBoxItem Content="Google Gemini" />
+                                            <ComboBoxItem Content="Groq" />
+                                            <ComboBoxItem Content="OpenAI" />
+                                            <ComboBoxItem Content="WusRouter" />
+                                            <ComboBoxItem Content="Ollama (локально)" />
+                                            <ComboBoxItem Content="Custom" />
+                                        </ComboBox>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Модель" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="ModelBox" Style="{StaticResource InputTextBoxStyle}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="API-ключ" Style="{StaticResource FieldLabel}" />
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <PasswordBox x:Name="ApiKeyPasswordBox" Style="{StaticResource InputPasswordBoxStyle}" />
+                                            <TextBox x:Name="ApiKeyPlainBox" Style="{StaticResource InputTextBoxStyle}" Visibility="Collapsed" />
+                                            <Button Grid.Column="1"
+                                                    Content="Показать"
+                                                    Style="{StaticResource SecondaryButtonStyle}"
+                                                    Padding="10,6"
+                                                    Margin="6,0,0,0"
+                                                    Click="ToggleKeyVisibility_Click" />
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Адрес API" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="BaseUrlBox" Style="{StaticResource InputTextBoxStyle}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="220" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <Grid Margin="0,0,0,4">
+                                            <TextBlock Text="Температура" Foreground="{DynamicResource TextMutedBrush}" FontSize="12" />
+                                            <TextBlock x:Name="TempValueText"
+                                                       Text="0.10"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       FontSize="12"
+                                                       HorizontalAlignment="Right" />
+                                        </Grid>
+                                        <Slider x:Name="TempSlider"
+                                                Minimum="0"
+                                                Maximum="1"
+                                                TickFrequency="0.05"
+                                                IsSnapToTickEnabled="True"
+                                                Value="0.1"
+                                                ValueChanged="TempSlider_ValueChanged" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Дополнительная инструкция для модели" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="SystemPromptBox" Style="{StaticResource InputTextBoxStyle}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button x:Name="TestApiButton"
+                                            Content="Проверить API"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Click="TestApi_Click" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}"
+                                Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Параметры прохождения"
+                                           Style="{StaticResource SectionTitle}"
+                                           Margin="0,0,0,10" />
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Порт CDP" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="CdpPortBox" Style="{StaticResource InputTextBoxStyle}" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Пауза ответа (мс)" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="SubmitDelayBox" Style="{StaticResource InputTextBoxStyle}" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Пауза шага (мс)" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="StepDelayBox" Style="{StaticResource InputTextBoxStyle}" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="6">
+                                        <TextBlock Text="Макс. шагов" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="MaxStepsBox" Style="{StaticResource InputTextBoxStyle}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <WrapPanel Margin="0,2,0,8">
+                                    <CheckBox x:Name="AutoAdvanceCheck"
+                                              Content="Автопереход на «Дальше»"
+                                              Style="{StaticResource DarkCheckBoxStyle}"
+                                              Margin="0,0,18,6" />
+                                    <CheckBox x:Name="SkipTheoryCheck"
+                                              Content="Пропускать теорию"
+                                              Style="{StaticResource DarkCheckBoxStyle}"
+                                              Margin="0,0,18,6" />
+                                    <CheckBox x:Name="RetryOnWrongCheck"
+                                              Content="Повтор при ошибке"
+                                              Style="{StaticResource DarkCheckBoxStyle}"
+                                              Margin="0,0,18,6" />
+                                    <CheckBox x:Name="PortableModeCheck"
+                                              Content="Хранить настройки рядом с программой"
+                                              Style="{StaticResource DarkCheckBoxStyle}"
+                                              Margin="0,0,18,6" />
+                                    <CheckBox x:Name="BossHotkeyCheck"
+                                              Content="Скрытие (Ctrl+Shift+H)"
+                                              Style="{StaticResource DarkCheckBoxStyle}"
+                                              Margin="0,0,0,6" />
+                                </WrapPanel>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="10" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Логин ученика" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="StudentLoginBox" Style="{StaticResource InputTextBoxStyle}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Код школы (для автовхода)" Style="{StaticResource FieldLabel}" />
+                                        <TextBox x:Name="SchoolCodeBox" Style="{StaticResource InputTextBoxStyle}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="4"
+                                            VerticalAlignment="Bottom"
+                                            Content="Удалить локальные данные"
+                                            Style="{StaticResource DangerButtonStyle}"
+                                            Click="CleanTraces_Click" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+                    <Border Grid.Row="1" Background="{DynamicResource BgChromeBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="24,9">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Сбросить"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Click="ResetSettings_Click"
+                                    Margin="0,0,8,0" />
+                            <Button Content="Сохранить настройки"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Click="SaveSettings_Click" />
+                        </StackPanel>
+                    </Border>
                 </Grid>
-            </Border>
+                <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Background="{DynamicResource BgChromeBrush}" Padding="18,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <Ellipse x:Name="StatusDot" Width="7" Height="7" VerticalAlignment="Center" Fill="#8893A4" Margin="0,0,7,0" />
+                        <TextBlock x:Name="StatusText" Grid.Column="1" VerticalAlignment="Center" Text="Готово к работе" FontSize="12"
+                                   Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <TextBlock Text="Модель" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,7,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Text, ElementName=ModelBox}" FontFamily="Consolas" FontSize="12" TextTrimming="CharacterEllipsis" MaxWidth="310" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
     </Border>
 </Window>

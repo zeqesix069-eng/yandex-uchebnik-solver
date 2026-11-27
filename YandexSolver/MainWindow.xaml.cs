@@ -43,6 +43,10 @@ namespace YandexSolver
         public MainWindow()
         {
             InitializeComponent();
+            Rect workArea = SystemParameters.WorkArea;
+            Width = Math.Min(Width, workArea.Width);
+            Height = Math.Min(Height, workArea.Height);
+            StateChanged += MainWindow_StateChanged;
             SourceInitialized += MainWindow_SourceInitialized;
             ApplySettingsToUi(AppSettings.Load());
         }
@@ -194,12 +198,43 @@ namespace YandexSolver
             return parsed;
         }
 
-        private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void Shell_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (e.ButtonState == MouseButtonState.Pressed)
-            {
-                DragMove();
-            }
+            if (!e.WidthChanged) return;
+            double width = e.NewSize.Width;
+            bool compactRail = width < 970;
+            RailColumn.Width = new GridLength(compactRail ? 74 : 202);
+            Resources["NavLabelVisibility"] = compactRail ? Visibility.Collapsed : Visibility.Visible;
+
+            bool wrapCommands = width < 910;
+            Grid.SetColumn(RunCommands, wrapCommands ? 0 : 1);
+            Grid.SetColumnSpan(RunCommands, wrapCommands ? 2 : 1);
+            Grid.SetRow(RunCommands, wrapCommands ? 1 : 0);
+            RunCommands.Margin = wrapCommands ? new Thickness(0, 10, 0, 0) : new Thickness(12, 4, 0, 0);
+
+            bool stacked = width < 860;
+            WorkGutter.Width = new GridLength(stacked ? 0 : 14);
+            LogColumn.Width = new GridLength(stacked ? 0 : 1, GridUnitType.Star);
+            Grid.SetColumn(JournalCard, stacked ? 0 : 2);
+            Grid.SetRow(JournalCard, stacked ? 1 : 0);
+            JournalCard.Height = stacked ? 196 : double.NaN;
+            JournalCard.Margin = new Thickness(0, stacked ? 14 : 0, 0, 0);
+            WorkCanvas.MinHeight = stacked ? 759 : 510;
+        }
+
+        private void Maximize_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        }
+
+        private void MainWindow_StateChanged(object sender, EventArgs e)
+        {
+            bool maximized = WindowState == WindowState.Maximized;
+            ShellFrame.Padding = maximized ? SystemParameters.WindowResizeBorderThickness : new Thickness(0);
+            MaximizeButton.Content = maximized ? "\uE923" : "\uE922";
+            string label = maximized ? "Восстановить размер" : "Развернуть";
+            MaximizeButton.ToolTip = label;
+            System.Windows.Automation.AutomationProperties.SetName(MaximizeButton, label);
         }
 
         private void Minimize_Click(object sender, RoutedEventArgs e)
@@ -208,6 +243,11 @@ namespace YandexSolver
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        protected override void OnClosed(EventArgs e)
         {
             if (_runCts != null)
             {
@@ -218,7 +258,7 @@ namespace YandexSolver
                 UnregisterHotKey(_hwndSource.Handle, HotkeyId);
             }
             _cdp.Dispose();
-            Close();
+            base.OnClosed(e);
         }
 
         private void NavTab_Changed(object sender, RoutedEventArgs e)
@@ -438,14 +478,14 @@ namespace YandexSolver
                 await _cdp.ConnectAsync(wsUrl, CancellationToken.None);
                 BrowserStatusLabel.Text = "Подключено к браузеру (порт " + _settings.CdpPort + ")";
                 ConnectionDot.Fill = SuccessDot;
-                ConnectionPillText.Text = "CDP: " + _settings.CdpPort;
+                ConnectionPillText.Text = "Браузер подключён · " + _settings.CdpPort;
                 AppendLog("Подключено к CDP: " + wsUrl);
                 return true;
             }
             catch (Exception exc)
             {
                 ConnectionDot.Fill = ErrorDot;
-                ConnectionPillText.Text = "CDP: ошибка";
+                ConnectionPillText.Text = "Ошибка подключения";
                 SetStatus("Ошибка подключения: " + exc.Message, ErrorDot);
                 AppendLog("Ошибка CDP: " + exc.Message);
                 return false;
@@ -474,7 +514,7 @@ namespace YandexSolver
         {
             if (!_cdp.IsConnected)
             {
-                SetStatus("Сначала подключитесь к Edge.", ErrorDot);
+                SetStatus("Сначала подключитесь к браузеру.", ErrorDot);
                 return;
             }
             await RefreshPreviewInternalAsync();
@@ -500,7 +540,7 @@ namespace YandexSolver
                 ? "(текст задания не найден)"
                 : state.QuestionText;
             TaskPreviewBox.Text = string.Format(
-                "URL: {0}\r\nЭлементов ввода: {1} | Кнопка «Ответить»: {2} | «Дальше»: {3}\r\n\r\n{4}",
+                "{4}\r\n\r\nЭлементов ввода: {1} · Ответить: {2} · Дальше: {3}\r\n{0}",
                 state.Url,
                 state.Controls.Count,
                 state.HasSubmit ? "да" : "нет",
@@ -541,7 +581,7 @@ namespace YandexSolver
             SetRunningState(true);
             var automation = new LessonAutomation(_cdp);
             int solvedCount = 0;
-            SolvedCounterText.Text = "Шагов: 0";
+            SolvedCounterText.Text = "0";
 
             try
             {
@@ -564,7 +604,7 @@ namespace YandexSolver
                             await automation.ClickButtonAsync(new[] { "дальше", "далее", "продолжить" }, _runCts.Token);
                             AppendLog("Нажато «Дальше».");
                             solvedCount++;
-                            SolvedCounterText.Text = "Шагов: " + solvedCount;
+                            SolvedCounterText.Text = solvedCount.ToString(CultureInfo.InvariantCulture);
                             if (!loopMode) break;
                             await Task.Delay(_settings.StepDelayMs, _runCts.Token);
                             continue;
@@ -623,7 +663,7 @@ namespace YandexSolver
                     }
 
                     solvedCount++;
-                    SolvedCounterText.Text = "Шагов: " + solvedCount;
+                    SolvedCounterText.Text = solvedCount.ToString(CultureInfo.InvariantCulture);
 
                     if (!loopMode && !_settings.AutoAdvance)
                     {
