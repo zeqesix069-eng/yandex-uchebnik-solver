@@ -918,7 +918,7 @@ namespace YandexSolver
                             function isTrigger(el) {
                                 if (!window.__ysDrops) return false;
                                 for (var i = 0; i < window.__ysDrops.length; i++) {
-                                    if (window.__ysDrops[i] === el || window.__ysDrops[i].contains(el)) return true;
+                                    if (window.__ysDrops[i] === el) return true;
                                 }
                                 return false;
                             }
