@@ -544,6 +544,7 @@ namespace YandexSolver
             sb.AppendLine("   - Если kind=radio: выбери ровно 1 индекс.");
             sb.AppendLine("   - Если kind=checkbox (квадратики): в Яндекс Учебнике обычно 2 и более верных ответа — обязательно укажи ВСЕ подходящие индексы (не меньше 2).");
             sb.AppendLine("2) Для ввода текста/чисел/кода/списков по порядку: {\"type\":\"inputs\",\"values\":[\"ответ\"]}");
+            sb.AppendLine("   - ВАЖНО для kind=code: поле value содержит ВЕСЬ код файла! Верни в values ПОЛНЫЙ обновлённый код всего файла целиком (сохранив <html>, <head>, <style>, <body> и прочий шаблон), а не только добавленный фрагмент.");
             sb.AppendLine("3) Для перетаскивания карточек в зоны: {\"type\":\"drag\",\"moves\":[{\"itemIndex\":0,\"targetIndex\":0}]}");
             return sb.ToString();
         }
