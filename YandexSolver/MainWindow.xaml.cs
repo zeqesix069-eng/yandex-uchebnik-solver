@@ -619,14 +619,26 @@ namespace YandexSolver
                         break;
                     }
 
-                    if (string.IsNullOrEmpty(_settings.ApiKey) && _settings.Provider != "Ollama (локально)")
+                    string taskHash = AnswerCache.ComputeTaskHash(state);
+                    string cachedAnswer;
+                    string applied;
+                    if (AnswerCache.TryGet(taskHash, _settings, out cachedAnswer))
                     {
-                        throw new InvalidOperationException("Укажите API-ключ во вкладке «Настройки».");
+                        SetStatus("Применяю ответ из кэша...", LoadingDot);
+                        applied = await automation.ApplyAnswerJsonAsync(state, cachedAnswer, _runCts.Token);
+                        AppendLog("ИИ (кэш): " + cachedAnswer);
                     }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(_settings.ApiKey) && _settings.Provider != "Ollama (локально)")
+                        {
+                            throw new InvalidOperationException("Укажите API-ключ во вкладке «Настройки».");
+                        }
 
-                    SetStatus("Решаю через " + _settings.Model + "...", LoadingDot);
-                    string applied = await automation.SolveAndApplyAsync(state, _settings, string.Empty, _runCts.Token);
-                    AppendLog("ИИ: " + automation.LastLlmResponse);
+                        SetStatus("Решаю через " + _settings.Model + "...", LoadingDot);
+                        applied = await automation.SolveAndApplyAsync(state, _settings, string.Empty, _runCts.Token);
+                        AppendLog("ИИ: " + automation.LastLlmResponse);
+                    }
                     AppendLog("Применено: " + applied);
 
                     if (state.HasSubmit)
@@ -659,6 +671,11 @@ namespace YandexSolver
                         await automation.ClickButtonAsync(new[] { "ответить", "проверить" }, _runCts.Token);
                         await Task.Delay(1600, _runCts.Token);
                         after = await automation.ExtractStateAsync(_runCts.Token);
+                    }
+
+                    if (!after.IsErrorBanner && (after.IsCorrectBanner || after.HasNext || after.HasFinish))
+                    {
+                        AnswerCache.Save(taskHash, automation.LastLlmResponse, _settings);
                     }
 
                     solvedCount++;
@@ -751,6 +768,35 @@ namespace YandexSolver
         private void ClearLog_Click(object sender, RoutedEventArgs e)
         {
             LogBox.Clear();
+        }
+
+        private async void CopyBugReport_Click(object sender, RoutedEventArgs e)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("=== ЗАДАНИЕ ===");
+            sb.AppendLine(TaskPreviewBox.Text);
+            sb.AppendLine();
+            sb.AppendLine("=== ЖУРНАЛ ===");
+            sb.AppendLine(LogBox.Text);
+            if (_cdp != null && _cdp.IsConnected)
+            {
+                try
+                {
+                    var automation = new LessonAutomation(_cdp);
+                    string domJson = await automation.ExtractDebugDomAsync(CancellationToken.None);
+                    sb.AppendLine();
+                    sb.AppendLine("=== DOM ===");
+                    sb.AppendLine(domJson);
+                }
+                catch (Exception ex)
+                {
+                    sb.AppendLine();
+                    sb.AppendLine("=== DOM ERROR ===");
+                    sb.AppendLine(ex.Message);
+                }
+            }
+            Clipboard.SetText(sb.ToString());
+            AppendLog("DOM и лог скопированы в буфер обмена.");
         }
 
         private void DlUrlBox_KeyDown(object sender, KeyEventArgs e)
@@ -950,6 +996,54 @@ namespace YandexSolver
             {
                 SetStatus("Не всё удалось удалить (закройте браузер): " + exc.Message, ErrorDot);
             }
+        }
+
+        private void SelfDestruct_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult confirm = MessageBox.Show(
+                "Полностью удалить все данные приложения, кэш ответов, профили браузера и саму программу через 5 секунд?",
+                "Удаление без следа",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            string appDataDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "YandexUchebnikSolver");
+            string nativeDir = Path.Combine(Path.GetTempPath(), "EduToolsNative");
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            try { if (Directory.Exists(appDataDir)) Directory.Delete(appDataDir, true); } catch { }
+            try { if (Directory.Exists(nativeDir)) Directory.Delete(nativeDir, true); } catch { }
+            try
+            {
+                string portableProfiles = Path.Combine(baseDir, "Profiles");
+                if (Directory.Exists(portableProfiles)) Directory.Delete(portableProfiles, true);
+                string portableIni = AppSettings.GetPortableSettingsPath();
+                if (File.Exists(portableIni)) File.Delete(portableIni);
+                string portableCache = Path.Combine(baseDir, "answers_cache.json");
+                if (File.Exists(portableCache)) File.Delete(portableCache);
+            }
+            catch { }
+
+            string exePath = Process.GetCurrentProcess().MainModule.FileName;
+            string cmdArgs = string.Format(
+                "/c ping 127.0.0.1 -n 6 > nul & del /f /q \"{0}\" > nul 2>&1 & rmdir /s /q \"{1}\" > nul 2>&1 & rmdir /s /q \"{2}\" > nul 2>&1",
+                exePath,
+                appDataDir,
+                nativeDir);
+
+            Process.Start(new ProcessStartInfo("cmd.exe", cmdArgs)
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                WindowStyle = ProcessWindowStyle.Hidden
+            });
+
+            Application.Current.Shutdown();
         }
     }
 }

@@ -552,7 +552,12 @@ namespace YandexSolver
                     state.ScreenshotBase64), ct).ConfigureAwait(false);
 
             LastLlmResponse = llmRaw;
+            return await ApplyAnswerJsonAsync(state, llmRaw, ct).ConfigureAwait(false);
+        }
 
+        public async Task<string> ApplyAnswerJsonAsync(PageTaskState state, string llmRaw, CancellationToken ct)
+        {
+            LastLlmResponse = llmRaw;
             var answerDict = _json.Deserialize<Dictionary<string, object>>(llmRaw);
             if (answerDict == null)
             {
@@ -884,6 +889,20 @@ namespace YandexSolver
 
             object res = await _cdp.EvaluateAsync(script, ct).ConfigureAwait(false);
             return res is bool && (bool)res;
+        }
+
+        public async Task<string> ExtractDebugDomAsync(CancellationToken ct)
+        {
+            const string script = @"(function() {
+                var root = document.querySelector('.problem__block-list') || document.querySelector('main') || document.body;
+                return JSON.stringify({
+                    url: location.href,
+                    text: root ? (root.innerText || '').slice(0, 4000) : '',
+                    html: root ? (root.outerHTML || '').slice(0, 14000) : ''
+                });
+            })()";
+            object raw = await _cdp.EvaluateAsync(script, ct).ConfigureAwait(false);
+            return Convert.ToString(raw) ?? string.Empty;
         }
 
         public async Task<bool> ClickButtonAsync(string[] titles, CancellationToken ct)

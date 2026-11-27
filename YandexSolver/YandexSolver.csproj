@@ -43,6 +43,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="AnswerCache.cs" />
     <Compile Include="AppSettings.cs" />
     <Compile Include="CdpClient.cs" />
     <Compile Include="CertificateResolver.cs" />
