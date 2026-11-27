@@ -21,6 +21,7 @@ namespace YandexSolver
         public List<TaskControl> Controls { get; set; }
         public List<DragNode> DragItems { get; set; }
         public List<DragNode> DropTargets { get; set; }
+        public bool IsReorderList { get; set; }
 
         public PageTaskState()
         {
@@ -385,6 +386,32 @@ namespace YandexSolver
                             }
                         }
                     }
+
+                    if (state.DragItems.Count >= 2)
+                    {
+                        bool sameAsItems = state.DropTargets.Count == state.DragItems.Count;
+                        if (sameAsItems)
+                        {
+                            for (int i = 0; i < state.DragItems.Count; i++)
+                            {
+                                DragNode di = state.DragItems[i];
+                                DragNode dt = state.DropTargets[i];
+                                bool closePos = Math.Abs(di.X - dt.X) <= 20 && Math.Abs(di.Y - dt.Y) <= 20;
+                                bool sameText = string.Equals(di.Label, dt.Label, StringComparison.OrdinalIgnoreCase);
+                                if (!closePos && !sameText)
+                                {
+                                    sameAsItems = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (state.DropTargets.Count == 0 || sameAsItems)
+                        {
+                            state.IsReorderList = true;
+                            state.DropTargets.Clear();
+                        }
+                    }
                 }
                 catch
                 {
@@ -420,6 +447,64 @@ namespace YandexSolver
             }
 
             string ansType = GetString(answerDict, "type");
+            if (ansType == "reorder" && answerDict.ContainsKey("order") && answerDict["order"] is ArrayList)
+            {
+                var desiredOrder = new List<int>();
+                foreach (object o in (ArrayList)answerDict["order"])
+                {
+                    int idx = Convert.ToInt32(o);
+                    if (idx >= 0 && idx < state.DragItems.Count && !desiredOrder.Contains(idx))
+                    {
+                        desiredOrder.Add(idx);
+                    }
+                }
+
+                var currentOrder = new List<int>();
+                for (int i = 0; i < state.DragItems.Count; i++)
+                {
+                    currentOrder.Add(i);
+                }
+
+                int moved = 0;
+                for (int pos = 0; pos < desiredOrder.Count; pos++)
+                {
+                    int wantedInitialIdx = desiredOrder[pos];
+                    int curPos = currentOrder.IndexOf(wantedInitialIdx);
+                    if (curPos < 0 || curPos == pos) continue;
+
+                    List<DragNode> liveNodes = await GetCurrentDragNodesAsync(ct).ConfigureAwait(false);
+                    if (liveNodes.Count != state.DragItems.Count)
+                    {
+                        liveNodes = state.DragItems;
+                    }
+
+                    string wantedLabel = state.DragItems[wantedInitialIdx].Label;
+                    int liveSrcIdx = -1;
+                    for (int k = pos; k < liveNodes.Count; k++)
+                    {
+                        if (string.Equals(liveNodes[k].Label, wantedLabel, StringComparison.Ordinal))
+                        {
+                            liveSrcIdx = k;
+                            break;
+                        }
+                    }
+                    if (liveSrcIdx < 0) liveSrcIdx = curPos;
+
+                    if (liveSrcIdx != pos && liveSrcIdx < liveNodes.Count && pos < liveNodes.Count)
+                    {
+                        DragNode src = liveNodes[liveSrcIdx];
+                        DragNode dst = liveNodes[pos];
+                        await _cdp.DragAsync(src.X, src.Y, dst.X, dst.Y, ct).ConfigureAwait(false);
+                        moved++;
+                        await Task.Delay(250, ct).ConfigureAwait(false);
+                    }
+
+                    currentOrder.RemoveAt(curPos);
+                    currentOrder.Insert(pos, wantedInitialIdx);
+                }
+                return "reorder:" + moved;
+            }
+
             if (ansType == "drag" && answerDict.ContainsKey("moves") && answerDict["moves"] is ArrayList)
             {
                 int moved = 0;
@@ -607,6 +692,63 @@ namespace YandexSolver
             return res is bool && (bool)res;
         }
 
+        private async Task<List<DragNode>> GetCurrentDragNodesAsync(CancellationToken ct)
+        {
+            const string script = @"(function() {
+                function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
+                function isVisible(el) {
+                    if (!el) return false;
+                    var r = el.getBoundingClientRect();
+                    return r.width > 12 && r.height > 12;
+                }
+                var root = document.querySelector('.problem__block-list') || document.querySelector('main') || document.body;
+                var items = [];
+                var all = root.querySelectorAll('div, span, li');
+                for (var i = 0; i < all.length; i++) {
+                    var el = all[i];
+                    if (!isVisible(el)) continue;
+                    var st = window.getComputedStyle(el);
+                    var r = el.getBoundingClientRect();
+                    var txt = clean(el.innerText);
+                    if ((el.getAttribute('draggable') === 'true' || st.cursor === 'grab' || st.cursor === '-webkit-grab') && txt && txt.length <= 120 && r.width < 450 && r.height < 120) {
+                        items.push({ index: items.length, label: txt, x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) });
+                    }
+                }
+                items.sort(function(a, b) {
+                    if (Math.abs(a.y - b.y) > 10) return a.y - b.y;
+                    return a.x - b.x;
+                });
+                for (var k = 0; k < items.length; k++) items[k].index = k;
+                return JSON.stringify(items);
+            })()";
+
+            var nodes = new List<DragNode>();
+            try
+            {
+                object raw = await _cdp.EvaluateAsync(script, ct).ConfigureAwait(false);
+                var arr = _json.Deserialize<ArrayList>(Convert.ToString(raw));
+                if (arr != null)
+                {
+                    foreach (object obj in arr)
+                    {
+                        var d = obj as Dictionary<string, object>;
+                        if (d == null) continue;
+                        nodes.Add(new DragNode
+                        {
+                            Index = Convert.ToInt32(d["index"]),
+                            Label = GetString(d, "label"),
+                            X = Convert.ToInt32(d["x"]),
+                            Y = Convert.ToInt32(d["y"])
+                        });
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return nodes;
+        }
+
         private static string BuildPrompt(PageTaskState state, string retryNote)
         {
             var sb = new StringBuilder();
@@ -623,17 +765,29 @@ namespace YandexSolver
             }
             if (state.DragItems.Count > 0)
             {
-                sb.AppendLine("Перетаскиваемые карточки (dragItems):");
-                foreach (DragNode d in state.DragItems)
+                if (state.IsReorderList)
                 {
-                    sb.AppendFormat("- itemIndex={0}, text=\"{1}\"", d.Index, d.Label);
-                    sb.AppendLine();
+                    sb.AppendLine("Элементы для расстановки в правильном порядке (сейчас сверху вниз / слева направо):");
+                    foreach (DragNode d in state.DragItems)
+                    {
+                        sb.AppendFormat("- itemIndex={0}, text=\"{1}\"", d.Index, d.Label);
+                        sb.AppendLine();
+                    }
                 }
-                sb.AppendLine("Целевые зоны (dropTargets):");
-                foreach (DragNode t in state.DropTargets)
+                else
                 {
-                    sb.AppendFormat("- targetIndex={0}, label=\"{1}\"", t.Index, t.Label);
-                    sb.AppendLine();
+                    sb.AppendLine("Перетаскиваемые карточки (dragItems):");
+                    foreach (DragNode d in state.DragItems)
+                    {
+                        sb.AppendFormat("- itemIndex={0}, text=\"{1}\"", d.Index, d.Label);
+                        sb.AppendLine();
+                    }
+                    sb.AppendLine("Целевые зоны (dropTargets):");
+                    foreach (DragNode t in state.DropTargets)
+                    {
+                        sb.AppendFormat("- targetIndex={0}, label=\"{1}\"", t.Index, t.Label);
+                        sb.AppendLine();
+                    }
                 }
             }
             if (!string.IsNullOrEmpty(retryNote))
@@ -648,7 +802,15 @@ namespace YandexSolver
             sb.AppendLine("   - Если kind=checkbox (квадратики): в Яндекс Учебнике обычно 2 и более верных ответа — обязательно укажи ВСЕ подходящие индексы (не меньше 2).");
             sb.AppendLine("2) Для ввода текста/чисел/кода/списков по порядку: {\"type\":\"inputs\",\"values\":[\"ответ\"]}");
             sb.AppendLine("   - ВАЖНО для kind=code: поле value содержит ВЕСЬ код файла! Верни в values ПОЛНЫЙ обновлённый код всего файла целиком (сохранив <html>, <head>, <style>, <body> и прочий шаблон), а не только добавленный фрагмент.");
-            sb.AppendLine("3) Для перетаскивания карточек в зоны: {\"type\":\"drag\",\"moves\":[{\"itemIndex\":0,\"targetIndex\":0}]}");
+            if (state.IsReorderList)
+            {
+                sb.AppendLine("3) Для расстановки элементов списка в правильном порядке: {\"type\":\"reorder\",\"order\":[0,1,2]}");
+                sb.AppendLine("   - В массиве order перечисли ВСЕ itemIndex в нужном итоговом порядке (от первого к последнему, сверху вниз).");
+            }
+            else
+            {
+                sb.AppendLine("3) Для перетаскивания карточек в зоны: {\"type\":\"drag\",\"moves\":[{\"itemIndex\":0,\"targetIndex\":0}]}");
+            }
             return sb.ToString();
         }
 
