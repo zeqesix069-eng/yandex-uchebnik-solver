@@ -200,8 +200,9 @@ namespace YandexSolver
                         var rowTxt = tr ? clean(tr.innerText) : '';
                         label = clean((colHdr ? colHdr + ' | ' : '') + rowTxt + (label ? ' | ' + label : ''));
                     }
-                    if (tag === 'select') {
-                        var opts = Array.prototype.slice.call(el.options).map(function(o) { return clean(o.text); }).filter(Boolean);
+                    var selEl = (tag === 'select') ? el : (el.querySelector ? el.querySelector('select') : null);
+                    if (selEl && selEl.options) {
+                        var opts = Array.prototype.slice.call(selEl.options).map(function(o) { return clean(o.text); }).filter(Boolean);
                         label = (label + ' [options: ' + opts.join(' | ') + ']').trim();
                     }
                     controls.push({
@@ -875,7 +876,11 @@ namespace YandexSolver
                         var els = window.__ysDrops;
                         var el = els[idx];
                         if (!el) return JSON.stringify({ status: 'missing' });
-                        if (el.tagName.toLowerCase() === 'select') return JSON.stringify({ status: 'native-select' });
+                        var sel = (el.tagName.toLowerCase() === 'select') ? el : (el.querySelector ? el.querySelector('select') : null);
+                        if (sel) {
+                            window.__ysActiveSelect = sel;
+                            return JSON.stringify({ status: 'native-select' });
+                        }
                         el.scrollIntoView({ block: 'center' });
                         var rr = el.getBoundingClientRect();
                         return JSON.stringify({ status: 'opened', x: Math.round(rr.left + rr.width / 2), y: Math.round(rr.top + rr.height / 2) });
@@ -886,21 +891,25 @@ namespace YandexSolver
                     string trigStatus = GetString(trigDict, "status");
                     if (trigStatus == "native-select")
                     {
-                        string selectJs = @"(function(idx, val) {
-                            function isVisible(el) { if (!el) return false; var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
-                            var els = document.querySelectorAll('select');
-                            var el = els[idx];
+                        string selectJs = @"(function(val) {
+                            var el = window.__ysActiveSelect;
                             if (!el) return false;
                             var target = String(val || '').trim().toLowerCase();
+                            var matchIdx = -1;
                             for (var o = 0; o < el.options.length; o++) {
-                                if (el.options[o].text.trim().toLowerCase() === target || el.options[o].value.trim().toLowerCase() === target) {
-                                    el.selectedIndex = o;
-                                    el.dispatchEvent(new Event('change', { bubbles: true }));
-                                    return true;
-                                }
+                                var ot = el.options[o].text.trim().toLowerCase();
+                                var ov = el.options[o].value.trim().toLowerCase();
+                                if (ot === target || ov === target) { matchIdx = o; break; }
+                                if (matchIdx < 0 && target.length >= 2 && (ot.indexOf(target) >= 0 || ov.indexOf(target) >= 0)) matchIdx = o;
                             }
-                            return false;
-                        })(" + m + ", " + _json.Serialize(targetVal) + ")";
+                            if (matchIdx < 0) return false;
+                            var desc = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value');
+                            if (desc && desc.set) desc.set.call(el, el.options[matchIdx].value);
+                            el.selectedIndex = matchIdx;
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                            return true;
+                        })(" + _json.Serialize(targetVal) + ")";
                         await _cdp.EvaluateAsync(selectJs, state.TargetContextId, ct).ConfigureAwait(false);
                         appliedDrops++;
                         continue;
