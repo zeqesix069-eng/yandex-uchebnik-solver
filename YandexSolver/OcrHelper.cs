@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace YandexSolver
@@ -10,15 +9,42 @@ namespace YandexSolver
     public static class OcrHelper
     {
         private static readonly Type OcrEngineType = Type.GetType("Windows.Media.Ocr.OcrEngine, Windows.Media.Ocr, ContentType=WindowsRuntime");
+        private static readonly Type OcrResultType = Type.GetType("Windows.Media.Ocr.OcrResult, Windows.Media.Ocr, ContentType=WindowsRuntime");
         private static readonly Type LanguageType = Type.GetType("Windows.Globalization.Language, Windows.Globalization, ContentType=WindowsRuntime");
         private static readonly Type StreamType = Type.GetType("Windows.Storage.Streams.InMemoryRandomAccessStream, Windows.Storage.Streams, ContentType=WindowsRuntime");
         private static readonly Type DataWriterType = Type.GetType("Windows.Storage.Streams.DataWriter, Windows.Storage.Streams, ContentType=WindowsRuntime");
         private static readonly Type DecoderType = Type.GetType("Windows.Graphics.Imaging.BitmapDecoder, Windows.Graphics.Imaging, ContentType=WindowsRuntime");
+        private static readonly Type SoftwareBitmapType = Type.GetType("Windows.Graphics.Imaging.SoftwareBitmap, Windows.Graphics.Imaging, ContentType=WindowsRuntime");
         private static readonly Type PixelFormatType = Type.GetType("Windows.Graphics.Imaging.BitmapPixelFormat, Windows.Graphics.Imaging, ContentType=WindowsRuntime");
         private static readonly Type AlphaModeType = Type.GetType("Windows.Graphics.Imaging.BitmapAlphaMode, Windows.Graphics.Imaging, ContentType=WindowsRuntime");
 
+        private static readonly MethodInfo AsTaskGeneric = FindAsTaskGeneric();
         private static readonly object RuEngine = CreateEngine("ru");
         private static readonly object EnEngine = CreateEngine("en");
+
+        private static MethodInfo FindAsTaskGeneric()
+        {
+            try
+            {
+                Assembly srw = Assembly.Load("System.Runtime.WindowsRuntime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
+                Type ext = srw.GetType("System.WindowsRuntimeSystemExtensions");
+                foreach (MethodInfo m in ext.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                {
+                    if (m.Name == "AsTask" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1)
+                    {
+                        ParameterInfo p = m.GetParameters()[0];
+                        if (p.ParameterType.Name.StartsWith("IAsyncOperation`1", StringComparison.Ordinal))
+                        {
+                            return m;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return null;
+        }
 
         private static object CreateEngine(string langPrefix)
         {
@@ -52,25 +78,17 @@ namespace YandexSolver
             }
         }
 
-        private static object AwaitWinRt(object asyncOp)
+        private static object AwaitWinRt(object asyncOp, Type resultType)
         {
-            if (asyncOp == null)
+            if (asyncOp == null || AsTaskGeneric == null)
             {
                 return null;
             }
-            Type opType = asyncOp.GetType();
-            PropertyInfo statusProp = opType.GetProperty("Status");
-            if (statusProp != null)
-            {
-                int tries = 0;
-                while (Convert.ToInt32(statusProp.GetValue(asyncOp, null)) == 0 && tries < 500)
-                {
-                    Thread.Sleep(10);
-                    tries++;
-                }
-            }
-            MethodInfo getResults = opType.GetMethod("GetResults");
-            return getResults != null ? getResults.Invoke(asyncOp, null) : null;
+            MethodInfo concrete = AsTaskGeneric.MakeGenericMethod(resultType);
+            var task = (Task)concrete.Invoke(null, new[] { asyncOp });
+            task.GetAwaiter().GetResult();
+            PropertyInfo resProp = task.GetType().GetProperty("Result");
+            return resProp != null ? resProp.GetValue(task, null) : null;
         }
 
         public static Task<string> RecognizePngBase64Async(string dataUrlOrBase64)
@@ -80,7 +98,7 @@ namespace YandexSolver
 
         private static string RecognizeSync(string dataUrlOrBase64)
         {
-            if (string.IsNullOrEmpty(dataUrlOrBase64) || StreamType == null || DataWriterType == null || DecoderType == null)
+            if (string.IsNullOrEmpty(dataUrlOrBase64) || StreamType == null || DataWriterType == null || DecoderType == null || SoftwareBitmapType == null || OcrResultType == null)
             {
                 return string.Empty;
             }
@@ -104,8 +122,8 @@ namespace YandexSolver
             {
                 object writer = Activator.CreateInstance(DataWriterType, stream);
                 DataWriterType.GetMethod("WriteBytes", new[] { typeof(byte[]) }).Invoke(writer, new object[] { bytes });
-                AwaitWinRt(DataWriterType.GetMethod("StoreAsync").Invoke(writer, null));
-                AwaitWinRt(DataWriterType.GetMethod("FlushAsync").Invoke(writer, null));
+                AwaitWinRt(DataWriterType.GetMethod("StoreAsync").Invoke(writer, null), typeof(uint));
+                AwaitWinRt(DataWriterType.GetMethod("FlushAsync").Invoke(writer, null), typeof(bool));
                 DataWriterType.GetMethod("DetachStream").Invoke(writer, null);
                 if (writer is IDisposable) ((IDisposable)writer).Dispose();
 
@@ -122,23 +140,23 @@ namespace YandexSolver
                 }
                 if (createDecoder == null) return string.Empty;
 
-                object decoder = AwaitWinRt(createDecoder.Invoke(null, new[] { stream }));
+                object decoder = AwaitWinRt(createDecoder.Invoke(null, new[] { stream }), DecoderType);
                 if (decoder == null) return string.Empty;
 
                 object bgra8 = Enum.ToObject(PixelFormatType, 87);
                 object premult = Enum.ToObject(AlphaModeType, 0);
                 MethodInfo getBmp = decoder.GetType().GetMethod("GetSoftwareBitmapAsync", new[] { PixelFormatType, AlphaModeType });
-                object bitmap = AwaitWinRt(getBmp.Invoke(decoder, new[] { bgra8, premult }));
+                object bitmap = AwaitWinRt(getBmp.Invoke(decoder, new[] { bgra8, premult }), SoftwareBitmapType);
                 if (bitmap == null) return string.Empty;
 
                 try
                 {
                     MethodInfo recMethod = OcrEngineType.GetMethod("RecognizeAsync");
-                    object ocrRes = AwaitWinRt(recMethod.Invoke(engine, new[] { bitmap }));
+                    object ocrRes = AwaitWinRt(recMethod.Invoke(engine, new[] { bitmap }), OcrResultType);
                     string text = ExtractText(ocrRes);
                     if (string.IsNullOrEmpty(text) && EnEngine != null && !ReferenceEquals(engine, EnEngine))
                     {
-                        object enRes = AwaitWinRt(recMethod.Invoke(EnEngine, new[] { bitmap }));
+                        object enRes = AwaitWinRt(recMethod.Invoke(EnEngine, new[] { bitmap }), OcrResultType);
                         text = ExtractText(enRes);
                     }
                     return text;
