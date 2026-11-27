@@ -436,10 +436,10 @@ SOLVER_API int ys_solve_task_vision(
     }
 
     HttpResponse resp = imgB64.empty()
-        ? executeHttp("POST", endpoint, headers, textPayload, 120000)
+        ? executeHttp("POST", endpoint, headers, textPayload, 45000)
         : executeHttp("POST", endpoint, headers, visionPayload, 20000);
     if (!imgB64.empty() && (!resp.error.empty() || resp.statusCode == 400 || resp.statusCode == 422)) {
-        resp = executeHttp("POST", endpoint, headers, textPayload, 120000);
+        resp = executeHttp("POST", endpoint, headers, textPayload, 45000);
     }
     if (!resp.error.empty()) {
         writeOutput(resp.error, outBuf, outBufSize);

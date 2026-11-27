@@ -676,7 +676,7 @@ namespace YandexSolver
             CancellationToken ct)
         {
             string prompt = BuildPrompt(state, retryNote);
-            string llmRaw = await Task.Run(() =>
+            Task<string> llmTask = Task.Run(() =>
                 NativeSolverBridge.SolveTask(
                     settings.Provider,
                     settings.BaseUrl,
@@ -685,7 +685,19 @@ namespace YandexSolver
                     settings.CustomSystemPrompt,
                     prompt,
                     settings.Temperature,
-                    state.ScreenshotBase64), ct).ConfigureAwait(false);
+                    state.ScreenshotBase64));
+
+            var cancelTcs = new TaskCompletionSource<bool>();
+            using (ct.Register(() => cancelTcs.TrySetResult(true)))
+            {
+                Task completed = await Task.WhenAny(llmTask, cancelTcs.Task).ConfigureAwait(false);
+                if (completed == cancelTcs.Task)
+                {
+                    ct.ThrowIfCancellationRequested();
+                }
+            }
+
+            string llmRaw = await llmTask.ConfigureAwait(false);
 
             LastLlmResponse = llmRaw;
             return await ApplyAnswerJsonAsync(state, llmRaw, ct).ConfigureAwait(false);
